@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Tema Base de la Aplicación -->
+    <style name="Theme.SAFERescue" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Establece el color de fondo de la ventana cuando el tema de Splash ya no está activo -->
+        <item name="android:windowBackground">@color/sr_primary_color</item>
+    </style>
+
+    <!-- Tema del Splash Screen (Pantalla de Inicio) -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- 1. Color de Fondo: Color Primario -->
+        <item name="windowSplashScreenBackground">@color/sr_primary_color</item>
+
+        <!-- 2. Ícono Central: Solo el ícono redondo (ic_launcher_round) -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+
+        <!-- Eliminamos cualquier referencia a windowSplashScreenBrandLogo o layouts combinados -->
+
+        <!-- 3. Tema Siguiente: Cambia a Theme.SAFERescue después del Splash -->
+        <item name="postSplashScreenTheme">@style/Theme.SAFERescue</item>
+
+        <!-- Colores de barra (opcional, pero ayuda a la inmersión) -->
+        <item name="android:statusBarColor" tools:targetApi="l">@color/sr_primary_color</item>
+        <item name="android:navigationBarColor" tools:targetApi="l">@color/sr_primary_color</item>
+    </style>
+</resources>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- CAPA 1: Ícono Principal (Centrado y con tamaño controlado) -->
+    <!-- Usamos un 'inset' para reducir el tamaño del ícono ic_launcher y que no ocupe todo. -->
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/ic_launcher"/> <!-- Opcional: añade un tinte si es necesario -->
+    </item>
+
+    <!-- CAPA 2: Logo de la Marca (Texto "SAFE Rescue" o similar) -->
+    <!-- Colocado en la parte inferior del Splash Screen. -->
+    <!-- Usa 'bottom' para forzarlo a la parte de abajo. -->
+    <item
+        android:gravity="bottom|center_horizontal"
+        android:bottom="32dp"> <!-- Padding desde la parte inferior para que no quede pegado -->
+
+        <!-- Tu logo de marca (texto) que está en la carpeta drawable -->
+        <bitmap
+            android:src="@drawable/brand_logo_white"
+            android:gravity="bottom" />
+    </item>
+
+</layer-list>
