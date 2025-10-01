@@ -12,5 +12,9 @@ val Pink40 = Color(0xFF7D5260)
 
 val uno_tres = Color(0x20a3d8)
 
+// Colores base para la estética moderna
 
+val PrimaryBlue = Color(0xFF1565C0) // Un azul profundo (similar a Inter)
+
+val SecondaryRed = Color(0xFFD32F2F) // Un rojo para acentos de emergencia
 

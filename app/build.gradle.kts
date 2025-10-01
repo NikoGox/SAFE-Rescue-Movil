@@ -75,4 +75,17 @@ dependencies {
     // Implementación de Material para compatibilidad de estilos XML
     implementation("com.google.android.material:material:1.12.0")
 
+    //Implementación de libreria para habilitar la navegación en aplicaciones Android que utilizan Jetpack Compose
+    implementation("androidx.navigation:navigation-compose:2.9.5")
+
+    //Implementación de libreria para integrar y utilizar ViewModels de la arquitectura de Android con Jetpack Compose.
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
+
+    // observar y reaccionar a los cambios en el ciclo de vida de Android dentro de tus funciones Composable
+    implementation("androidx.licecycle:lifecycle-runtime-compose:2.9.4")
+
+    //Implementación de libreria para coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
+    //Importante despues sintonizar las librerias
 }

@@ -42,10 +42,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.movil.saferescue.R // Importación para acceder a R.drawable.logo_safe_rescue
+import com.movil.saferescue.ui.theme.PrimaryBlue
+import com.movil.saferescue.ui.theme.SecondaryRed
 
 // Colores base para la estética moderna
-val PrimaryBlue = Color(0xFF1565C0) // Un azul profundo (similar a Inter)
-val SecondaryRed = Color(0xFFD32F2F) // Un rojo para acentos de emergencia
+val primaryBlue = Color(0xFF1565C0) // Un azul profundo (similar a Inter)
+val secondaryRed = Color(0xFFD32F2F) // Un rojo para acentos de emergencia
 
 // ----------------------------------------------------------------------------------
 // COMPONENTE DE TEXT FIELD REUTILIZABLE
@@ -64,7 +66,7 @@ fun LoginTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        leadingIcon = { Icon(icon, contentDescription = null, tint = PrimaryBlue) },
+        leadingIcon = { Icon(icon, contentDescription = null, tint = primaryBlue) },
         keyboardOptions = keyboardType,
         visualTransformation = visualTransformation,
         singleLine = true,
@@ -111,7 +113,7 @@ fun InicioSesionScreen(
         Text(
             text = "SAFE Rescue",
             style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold), // Montserrat/Inter Bold
-            color = PrimaryBlue
+            color = primaryBlue
         )
         Spacer(Modifier.height(8.dp))
 
@@ -151,14 +153,14 @@ fun InicioSesionScreen(
                 Checkbox(
                     checked = rememberMe,
                     onCheckedChange = { rememberMe = it }, // Funcionalidad del Checkbox
-                    colors = CheckboxDefaults.colors(checkedColor = PrimaryBlue)
+                    colors = CheckboxDefaults.colors(checkedColor = primaryBlue)
                 )
                 Text("Recordarme", style = MaterialTheme.typography.bodyMedium)
             }
             TextButton(onClick = { println("Botón Olvidé Contraseña presionado") }) {
                 Text(
                     "¿Olvidaste tu contraseña?",
-                    color = SecondaryRed,
+                    color = secondaryRed,
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
             }
@@ -170,7 +172,7 @@ fun InicioSesionScreen(
             onClick = onLoginClicked, // Llama a la función definida en MainActivity
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            colors = ButtonDefaults.buttonColors(containerColor = primaryBlue)
         ) {
             Text(
                 "Iniciar Sesión",

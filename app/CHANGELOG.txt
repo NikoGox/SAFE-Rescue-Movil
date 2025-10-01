@@ -1,0 +1,18 @@
+❚❙❘ VERSIÓN 1.1.1
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Creación de HomeScreen y RegisterScreen (Modificar nombres de Screens)
+├─• Creación de carpeta de componentes y se le agregan AppTopBar y LoginTextField(Se necesitan modificaciones)
+├─• Se realizan modificaciones en los colores
+├─• Se agrega una sealed class para las rutas
+└─• Se agregan las dependencias para la navegación
+
+❚❙❘ VERSIÓN 1.1
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se reinicializó el repositorio
+├─• Se creó la pantalla de inicio de sesión
+└─• Se agregaron estilos, colores y fuentes
+
+❚❙❘ VERSIÓN 1.0
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Inicialización del repositorio 
+└─• Se agregaron los recursos iniciales, incluidas las carpetas de organización
