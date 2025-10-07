@@ -7,10 +7,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme // IMPORTADO
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.movil.saferescue.ui.screen.primaryBlue
+// ⚠️ ELIMINAR: import com.movil.saferescue.ui.screen.primaryBlue
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,7 +28,8 @@ fun LoginTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        leadingIcon = { Icon(icon, contentDescription = null, tint = primaryBlue) },
+        // ✅ CORRECCIÓN: Usar el color primario del tema
+        leadingIcon = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
         keyboardOptions = keyboardType,
         visualTransformation = visualTransformation,
         singleLine = true,
