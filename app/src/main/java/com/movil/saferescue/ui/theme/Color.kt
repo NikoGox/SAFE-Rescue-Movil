@@ -10,7 +10,16 @@ val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
-val uno_tres = Color(0x20a3d8)
+val uno_tres = Color(0xFF20A3D8)
+
+// Colores base para la estética moderna
+
+val PrimaryBlue = Color(0xFF1565C0) // Un azul profundo (similar a Inter)
+
+val SecondaryRed = Color(0xFFD32F2F) // Un rojo para acentos de emergencia
 
 
+val SRPrimaryBlue = Color(0xFF1565C0) // Azul profundo de la marca (similar a Inter)
+val SRSecondaryRed = Color(0xFFD32F2F) // Rojo para acentos de emergencia
+val SRBackgroundLight = Color(0xFFD9D9D9) // Color de fondo claro (de colors.xml)
 

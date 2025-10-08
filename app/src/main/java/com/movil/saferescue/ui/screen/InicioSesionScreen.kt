@@ -1,7 +1,6 @@
 package com.movil.saferescue.ui.screen
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,16 +19,17 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,154 +41,124 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.movil.saferescue.R // Importación para acceder a R.drawable.logo_safe_rescue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.movil.saferescue.R
+import com.movil.saferescue.ui.components.LoginTextField
+import com.movil.saferescue.ui.theme.PrimaryBlue
+import com.movil.saferescue.ui.theme.SecondaryRed
+import com.movil.saferescue.ui.viewmodel.AuthViewModel
 
-// Colores base para la estética moderna
-val PrimaryBlue = Color(0xFF1565C0) // Un azul profundo (similar a Inter)
-val SecondaryRed = Color(0xFFD32F2F) // Un rojo para acentos de emergencia
-
-// ----------------------------------------------------------------------------------
-// COMPONENTE DE TEXT FIELD REUTILIZABLE
-// ----------------------------------------------------------------------------------
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
-    keyboardType: KeyboardOptions
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        leadingIcon = { Icon(icon, contentDescription = null, tint = PrimaryBlue) },
-        keyboardOptions = keyboardType,
-        visualTransformation = visualTransformation,
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
-    )
-}
-
-
-
-@Composable
 fun InicioSesionScreen(
-    onLoginClicked: () -> Unit // Función requerida para que el MainActivity la pueda llamar
+    viewModel: AuthViewModel = viewModel()
 ) {
-    // Definimos los estados para la interacción de la UI
-    var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
-    var rememberMe by rememberSaveable { mutableStateOf(false) }
+    val state by viewModel.loginState.collectAsState()
+
+    val primaryBlue = PrimaryBlue
+    val secondaryRed = SecondaryRed
+    var checked by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(26.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Bienvenido a",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium), // Montserrat/Inter Medium
-            color = Color.Black
-        )
-        Spacer(Modifier.height(32.dp))
-        // Logo y Título
-        // NOTA: Asegúrate de que tu imagen 'logo_safe_rescue' esté en res/drawable
+
         Image(
             painter = painterResource(id = R.drawable.sr_logo),
-            contentDescription = "Logo de SAFE Rescue",
-            modifier = Modifier.size(100.dp)
+            contentDescription = "Logo",
+            modifier = Modifier.size(150.dp)
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(48.dp))
 
-        Text(
-            text = "SAFE Rescue",
-            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold), // Montserrat/Inter Bold
-            color = PrimaryBlue
-        )
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            text = "Accede a tu cuenta",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium), // Montserrat/Inter Medium
-            color = Color.Gray
-        )
-        Spacer(Modifier.height(32.dp))
-
-        // Campos de Entrada
         LoginTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = "Email / Usuario",
-            icon = Icons.Default.MailOutline,
+            value = state.email,
+            onValueChange = viewModel::onEmailChanged,
+            label = "Email",
+            icon = Icons.Filled.MailOutline,
             keyboardType = KeyboardOptions(keyboardType = KeyboardType.Email)
         )
+
         Spacer(Modifier.height(16.dp))
+
         LoginTextField(
-            value = password,
-            onValueChange = { password = it },
+            value = state.pass,
+            onValueChange = viewModel::onPasswordChanged,
             label = "Contraseña",
-            icon = Icons.Default.Lock,
+            icon = Icons.Filled.Lock,
             visualTransformation = PasswordVisualTransformation(),
             keyboardType = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
-        Spacer(Modifier.height(8.dp))
 
-        // Checkbox y Olvidé Contraseña
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
-                    checked = rememberMe,
-                    onCheckedChange = { rememberMe = it }, // Funcionalidad del Checkbox
-                    colors = CheckboxDefaults.colors(checkedColor = PrimaryBlue)
+                    checked = checked,
+                    onCheckedChange = { checked = it },
+                    colors = CheckboxDefaults.colors(checkedColor = primaryBlue)
                 )
                 Text("Recordarme", style = MaterialTheme.typography.bodyMedium)
             }
-            TextButton(onClick = { println("Botón Olvidé Contraseña presionado") }) {
+            TextButton(onClick = { /* Lógica Olvidé Contraseña */ }) {
                 Text(
                     "¿Olvidaste tu contraseña?",
-                    color = SecondaryRed,
+                    color = secondaryRed,
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
             }
         }
+
         Spacer(Modifier.height(32.dp))
 
-        // Botón de Iniciar Sesión (Funcionalidad Clicable)
         Button(
-            onClick = onLoginClicked, // Llama a la función definida en MainActivity
+            onClick = viewModel::onLoginSubmit,
+            enabled = !state.isSubmitting,
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            colors = ButtonDefaults.buttonColors(containerColor = primaryBlue)
         ) {
+            if (state.isSubmitting) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+            } else {
+                Text(
+                    "Iniciar Sesión",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    fontSize = 20.sp
+                )
+            }
+        }
+
+        if (state.errorMsg != null) {
             Text(
-                "Iniciar Sesión",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                fontSize = 20.sp
+                text = state.errorMsg!!,
+                color = secondaryRed,
+                modifier = Modifier.padding(top = 8.dp)
             )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text("¿No tienes cuenta?")
+            TextButton(onClick = viewModel::onGoRegisterClicked) {
+                Text("Regístrate", color = primaryBlue)
+            }
         }
     }
 }
-
-// ----------------------------------------------------------------------------------
-// PREVIEW
-// ----------------------------------------------------------------------------------
 
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
 fun InicioSesionPreview() {
     MaterialTheme {
-        InicioSesionScreen(onLoginClicked = {})
+        InicioSesionScreen()
     }
 }

@@ -1,3 +1,13 @@
+❚❙❘ VERSIÓN 1.2
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Creación de las pantallas principales: `InicioSesionScreen`, `RegisterScreen` y `HomeScreen`.
+├─• Implementación completa de la arquitectura de navegación con Jetpack Compose y `NavGraph`.
+├─• Se implementa un `AuthViewModel` para manejar el estado de la UI y los eventos de navegación.
+├─• Se crea un `ModalNavigationDrawer` (`AppDrawer.kt`) como menú lateral funcional.
+├─• Conexión de `AppTopBar` con `AppDrawer` para permitir la apertura del menú.
+├─• Se crea una barra de navegación inferior (`BottomNavigationBar.kt`) para la navegación post-login.
+└─• Se refactoriza la comunicación entre el `ViewModel` y la `UI` mediante una `sealed class` de eventos (`NavigationEvent`).
+
 ❚❙❘ VERSIÓN 1.1.1
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Creación de HomeScreen y RegisterScreen (Modificar nombres de Screens)
