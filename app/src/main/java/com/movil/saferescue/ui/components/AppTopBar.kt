@@ -1,74 +1,143 @@
 package com.movil.saferescue.ui.components
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.movil.saferescue.ui.theme.SRPrimaryBlue
-import androidx.compose.foundation.layout.size // ⬅️ ¡Nueva Importación!
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTopBar(
-    title: String,
+    isAuthenticated: Boolean,
     onOpenDrawer: () -> Unit,
-    onNotificationsClicked: () -> Unit
+    onGoProfile: () -> Unit,
+    onGoLogin: () -> Unit,
+    onGoRegister: () -> Unit,
+    onLogout: () -> Unit
+
 ) {
-    // Definimos el tamaño del icono (ej. 24.dp es estándar, puedes usar 28.dp si quieres que sean más grandes)
-    val ICON_SIZE = 38.dp
+    var showMenu by remember { mutableStateOf(false) }
+    val iconSize = 28.dp
 
     CenterAlignedTopAppBar(
         modifier = Modifier
-            // Bordes inferiores redondeados de 16.dp
-            .clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)),
+            .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)),
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            // El color de contenedor está usando tu color directo (SRPrimaryBlue)
-            containerColor = SRPrimaryBlue,
-            // Los iconos y texto serán blancos (onPrimary)
+            containerColor = MaterialTheme.colorScheme.primary,
             titleContentColor = MaterialTheme.colorScheme.onPrimary,
-            actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
-            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onPrimary
         ),
         title = {
             Text(
-                text = title,
+                text = "Bienvenido a SAFE Rescue",
                 style = MaterialTheme.typography.titleLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         },
         navigationIcon = {
-            // Icono de Menú (Hamburguesa)
             IconButton(onClick = onOpenDrawer) {
                 Icon(
                     imageVector = Icons.Filled.Menu,
-                    contentDescription = "Menú Lateral",
-                    // ✅ APLICANDO EL TAMAÑO AL ICONO DE NAVEGACIÓN
-                    modifier = Modifier.size(ICON_SIZE)
+                    contentDescription = "Menú",
+                    modifier = Modifier.size(iconSize)
                 )
             }
         },
         actions = {
-            // Icono de Notificaciones
-            IconButton(onClick = onNotificationsClicked) {
+
+            if (isAuthenticated) {
+                // Usuario autenticado
+                IconButton(onClick = onGoProfile) {
+                    Icon(
+                        Icons.Filled.AccountCircle,
+                        contentDescription = "Perfil",
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+                IconButton(onClick = onLogout) {
+                    Icon(
+                        Icons.Filled.Logout,
+                        contentDescription = "Cerrar Sesión",
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+            } else {
+
+                IconButton(onClick = onGoLogin) {
+                    Icon(
+                        Icons.Filled.Login,
+                        contentDescription = "Login",
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+                IconButton(onClick = onGoRegister) {
+                    Icon(
+                        Icons.Filled.PersonAdd,
+                        contentDescription = "Registro",
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+            }
+
+            IconButton(onClick = { showMenu = true }) {
                 Icon(
-                    imageVector = Icons.Filled.Notifications,
-                    contentDescription = "Notificaciones",
-                    // ✅ APLICANDO EL TAMAÑO AL ICONO DE ACCIÓN
-                    modifier = Modifier.size(ICON_SIZE)
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = "Más opciones",
+                    modifier = Modifier.size(iconSize)
                 )
+            }
+
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false }
+            ) {
+                if (isAuthenticated) {
+                    DropdownMenuItem(
+                        text = { Text("Mi Perfil") },
+                        onClick = {
+                            showMenu = false
+                            onGoProfile()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Cerrar Sesión") },
+                        onClick = {
+                            showMenu = false
+                            onLogout()
+                        }
+                    )
+                } else {
+                    DropdownMenuItem(
+                        text = { Text("Iniciar Sesión") },
+                        onClick = {
+                            showMenu = false
+                            onGoLogin()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Registrarse") },
+                        onClick = {
+                            showMenu = false
+                            onGoRegister()
+                        }
+                    )
+                }
             }
         }
     )

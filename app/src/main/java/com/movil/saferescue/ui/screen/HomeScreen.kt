@@ -1,79 +1,94 @@
 package com.movil.saferescue.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.movil.saferescue.ui.components.AppTopBar
-import com.movil.saferescue.ui.components.SRBottomNavigationBar
 
-@Composable
+@Composable // Pantalla Home (sin formularios, solo navegación/diseño)
 fun HomeScreen(
-    onGoLogin: () -> Unit,
-    onGoRegister: () -> Unit,
-    onOpenDrawer: () -> Unit
-){
-    Scaffold(
-        topBar = {
-            AppTopBar(
-                title = "SAFE Rescue",
-                onOpenDrawer = onOpenDrawer,
-                onNotificationsClicked = { /* TODO: Mostrar Notificaciones */ }
-            )
-        },
-        bottomBar = {
-            SRBottomNavigationBar(
-                currentRoute = "home_route",
-                onItemClick = { route -> /* TODO: Navegar a la ruta */ }
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
-        ){
-            Column(horizontalAlignment = Alignment.CenterHorizontally){
+    onGoLogin: () -> Unit,   // Acción a Login
+    onGoRegister: () -> Unit // Acción a Registro
+) {
+    val bg = MaterialTheme.colorScheme.surfaceVariant // Fondo agradable para Home
 
-                Text(
-                    text = "Apartado en construcción",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground
+    Box( // Contenedor a pantalla completa
+        modifier = Modifier
+            .fillMaxSize() // Ocupa todo
+            .background(bg) // Aplica fondo
+            .padding(16.dp), // Margen interior
+        contentAlignment = Alignment.Center // Centra contenido
+    ) {
+        Column( // Estructura vertical
+            horizontalAlignment = Alignment.CenterHorizontally // Centra hijos
+        ) {
+            // Cabecera como Row (ejemplo de estructura)
+            Row(
+                verticalAlignment = Alignment.CenterVertically // Centra vertical
+            ) {
+                Text( // Título Home
+                    text = "Home",
+                    style = MaterialTheme.typography.headlineSmall, // Estilo título
+                    fontWeight = FontWeight.SemiBold // Seminegrita
                 )
+                Spacer(Modifier.width(8.dp)) // Separación horizontal
+                AssistChip( // Chip decorativo (Material 3)
+                    onClick = {}, // Sin acción (demo)
+                    label = { Text("Navega desde arriba o aquí") } // Texto chip
+                )
+            }
 
-                TextButton(
-                    onClick = onGoLogin,
-                    modifier = Modifier.padding(top = 26.dp)
+            Spacer(Modifier.height(20.dp)) // Separación
+
+            // Tarjeta con un mini “hero”
+            ElevatedCard( // Card elevada para remarcar contenido
+                modifier = Modifier.fillMaxWidth() // Ancho completo
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp), // Margen interno de la card
+                    horizontalAlignment = Alignment.CenterHorizontally // Centrado
                 ) {
                     Text(
-                        "Volver a Iniciar Sesión",
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.SemiBold
+                        "Demostración de navegación con TopBar + Drawer + Botones",
+                        style = MaterialTheme.typography.titleMedium, // Estilo medio
+                        textAlign = TextAlign.Center // Alineación centrada
+                    )
+                    Spacer(Modifier.height(12.dp)) // Separación
+                    Text(
+                        "Usa la barra superior (íconos y menú), el menú lateral o estos botones.",
+                        style = MaterialTheme.typography.bodyMedium // Texto base
                     )
                 }
             }
-        }
-    }
-}
 
-@Preview(showBackground = true, widthDp = 360, heightDp = 640)
-@Composable
-fun HomeScreenPreview() {
-    MaterialTheme {
-        HomeScreen(onGoLogin = {}, onGoRegister = {}, onOpenDrawer = {})
+            Spacer(Modifier.height(24.dp)) // Separación
+
+            // Botones de navegación principales
+            Row( // Dos botones en fila
+                horizontalArrangement = Arrangement.spacedBy(12.dp) // Espacio entre botones
+            ) {
+                Button(onClick = onGoLogin) { Text("Ir a Login") } // Navega a Login
+                OutlinedButton(onClick = onGoRegister) { Text("Ir a Registro") } // A Registro
+            }
+        }
     }
 }

@@ -11,17 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    // 💡 Aquí debes definir cómo se ven tus colores de marca en Modo Oscuro
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80,
-    background = Color(0xFF1C1B1F), // Fondo oscuro estándar
-    surface = Color(0xFF1C1B1F),
-)
-
 private val LightColorScheme = lightColorScheme(
-    // ✅ CORRECCIÓN: Usar los colores de marca de SAFE Rescue
     primary = SRPrimaryBlue, // El azul principal
     secondary = SRSecondaryRed, // El rojo de acento
     tertiary = Color.Black, // Color de texto/ícono terciario
@@ -30,6 +20,8 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = Color.White, // Color del texto/icono sobre el color primario
     onBackground = Color(0xFF1C1B1F), // Color del texto/icono sobre el fondo
 )
+
+private val DarkColorScheme = LightColorScheme
 
 @Composable
 fun SAFERescueTheme(
