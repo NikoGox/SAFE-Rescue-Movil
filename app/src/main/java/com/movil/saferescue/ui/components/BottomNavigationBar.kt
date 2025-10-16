@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
+import com.movil.saferescue.navigation.Route
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -14,13 +15,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp // Importación necesaria para sp
-import androidx.compose.ui.Modifier // Importación necesaria para Modifier
-import androidx.compose.foundation.layout.size // Importación necesaria para Modifier.size
-import androidx.compose.ui.text.TextStyle // ⬅️ Opcional, pero bueno para la consistencia
-import com.movil.saferescue.ui.theme.SRPrimaryBlue // Asumiendo que has definido este color
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.text.TextStyle
+import com.movil.saferescue.ui.theme.SRPrimaryBlue
 
-// Definición de los ítems de la barra para facilitar el mapeo
+
 data class BottomNavItem(
     val title: String,
     val icon: ImageVector,
@@ -29,7 +30,7 @@ data class BottomNavItem(
 
 val navItems = listOf(
     BottomNavItem("Incidentes", Icons.Filled.Warning, "incidents_route"),
-    BottomNavItem("Inicio", Icons.Filled.Home, "home_route"),
+    BottomNavItem("Inicio", Icons.Filled.Home, Route.Home.path),
     BottomNavItem("Chat", Icons.Filled.MailOutline, "chat_route")
 )
 

@@ -1,52 +1,93 @@
 package com.movil.saferescue.data.repository
 
+import androidx.compose.ui.semantics.password
 import com.movil.saferescue.data.local.foto.FotoDao
 import com.movil.saferescue.data.local.foto.FotoEntity
 import com.movil.saferescue.data.local.user.UserDao
 import com.movil.saferescue.data.local.user.UserEntity
+// --- CAMBIO 1: Importar los validadores ---
+import com.movil.saferescue.domain.validation.validateConfirm
+import com.movil.saferescue.domain.validation.validateStrongPassword
+import com.movil.saferescue.domain.validation.validateChileanRUN
+import com.movil.saferescue.domain.validation.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-//declarar reglas de negocio para el login/register
 class UserRepository(
-    //inyección de los DAOs necesarios
     private val userDao: UserDao,
-    private val fotoDao: FotoDao // 1. Inyectamos el DAO de fotos
+    private val fotoDao: FotoDao
 ) {
-    //orqueste el login
-    suspend fun login(email: String, password: String): Result<UserEntity> {
-        val user = userDao.getByEmail(email)
+    // --- CAMBIO 2: Variable para mantener el ID del usuario logueado ---
+    // Usamos 'Volatile' para asegurar que el valor sea siempre el más reciente entre hilos.
+    @Volatile
+    private var loggedInUserId: Long? = null
+
+    // Orquesta el login y guarda el ID del usuario si es exitoso
+    suspend fun login(identifier: String, password: String): Result<UserEntity> {
+        // Permitimos login con email o username
+        val user = userDao.getByEmailOrUsername(identifier)
         return if (user != null && user.password == password) {
+            // Guardamos el ID del usuario que ha iniciado sesión correctamente
+            setLoggedInUserId(user.id)
             Result.success(user)
         } else {
             Result.failure(IllegalArgumentException("Credenciales Inválidas"))
         }
     }
 
+    // --- CAMBIO 3: Nueva función para obtener el usuario logueado ---
     /**
-     * Obtiene los datos del usuario actualmente logueado.
-     * ATENCIÓN: Esta es una implementación SIMULADA. En una app real,
-     * deberías guardar el ID del usuario logueado en SharedPreferences
-     * y usar ese ID para buscar al usuario específico.
-     * Por ahora, simplemente devolvemos el primer usuario de la tabla.
+     * Obtiene los datos del usuario que ha iniciado sesión actualmente.
+     * Usa el ID guardado durante el login.
      */
-    suspend fun getCurrentUser(): UserEntity? {
+    suspend fun getLoggedInUser(): UserEntity? {
         return withContext(Dispatchers.IO) {
-            userDao.getAll().firstOrNull() // Devuelve el primer usuario que encuentre
+            loggedInUserId?.let { id ->
+                userDao.getUserById(id)
+            }
         }
     }
+
+    // --- CAMBIO 4: Nueva función para actualizar un usuario ---
+    /**
+     * Actualiza los datos de un usuario en la base de datos.
+     * Primero valida los campos antes de persistir.
+     */
+    suspend fun updateUser(user: UserEntity): Result<Unit> {
+        // Validación de campos antes de guardar (reutilizando la lógica de ValidatorUsers)
+        validateNameLettersOnly(user.name)?.let { return Result.failure(IllegalArgumentException(it)) }
+        validateUsername(user.username)?.let { return Result.failure(IllegalArgumentException(it)) }
+        validatePhoneDigitsOnly(user.phone)?.let { return Result.failure(IllegalArgumentException(it)) }
+        validateChileanRUN(user.run, user.dv)?.let { return Result.failure(IllegalArgumentException(it)) }
+
+        return withContext(Dispatchers.IO) {
+            try {
+                userDao.updateUser(user)
+                Result.success(Unit) // 'Unit' indica que la operación fue exitosa pero no devuelve un valor.
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    // Funciones de ayuda para gestionar el estado de login
+    fun setLoggedInUserId(userId: Long) {
+        loggedInUserId = userId
+    }
+
+    fun clearLoggedInUser() {
+        loggedInUserId = null
+    }
+
+    // El resto de las funciones (register, getFotoUrlById) permanecen mayormente igual
 
     suspend fun getFotoUrlById(fotoId: Long?): String? {
-        if (fotoId == null) return null // Si no hay ID, no hay foto
+        if (fotoId == null) return null
         return withContext(Dispatchers.IO) {
-            fotoDao.findFotoById(fotoId)?.url // Busca en FotoDao y devuelve solo la URL
+            fotoDao.findFotoById(fotoId)?.url
         }
     }
 
-    /**
-     * Orquesta el registro de un nuevo usuario.
-     * Transforma la URL de la foto en un ID antes de guardarla.
-     */
     suspend fun register(
         name: String,
         email: String,
@@ -55,27 +96,26 @@ class UserRepository(
         run: String,
         dv: String,
         username: String,
-        fotoUrl: String, // 2. Recibimos la URL en lugar del ID
+        fotoUrl: String,
         rol_id: Long
     ): Result<Long> {
         // Validación de correo existente
         if (userDao.getByEmail(email) != null) {
             return Result.failure(IllegalArgumentException("Correo ya registrado"))
         }
+        if (userDao.getByUsername(username) != null) {
+            return Result.failure(IllegalArgumentException("Nombre de usuario ya en uso"))
+        }
 
-        // 3. Lógica para obtener o crear el ID de la foto a partir de la URL
         val fotoExistente = fotoDao.getByUrl(fotoUrl)
         val fotoId: Long
 
         if (fotoExistente != null) {
-            // Si la foto ya existe en la base de datos, usamos su ID
             fotoId = fotoExistente.id
         } else {
-            // Si no existe, la insertamos y obtenemos el nuevo ID generado
             fotoId = fotoDao.insert(FotoEntity(url = fotoUrl, fechaSubida = System.currentTimeMillis()))
         }
 
-        // 4. Creamos y guardamos el usuario con el foto_id correcto
         val nuevoUsuarioId = userDao.insertUsuario(
             UserEntity(
                 name = name,
@@ -85,7 +125,7 @@ class UserRepository(
                 run = run,
                 dv = dv,
                 username = username,
-                foto_id = fotoId, // Usamos el ID que obtuvimos
+                foto_id = fotoId,
                 rol_id = rol_id
             )
         )

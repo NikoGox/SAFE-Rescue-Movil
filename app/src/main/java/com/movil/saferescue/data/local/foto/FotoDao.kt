@@ -11,8 +11,6 @@ interface FotoDao {
     @Query("SELECT * FROM fotos WHERE url = :url LIMIT 1")
     suspend fun getByUrl(url: String): FotoEntity?
 
-    // Inserta una nueva foto. Si la URL ya existe, no hace nada (gracias a 'unique = true').
-    // OnConflictStrategy.IGNORE devuelve -1 si no se inserta, por eso no lo usamos aquí.
     @Insert
     suspend fun insert(foto: FotoEntity): Long
 

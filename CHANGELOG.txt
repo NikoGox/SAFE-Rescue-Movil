@@ -1,7 +1,22 @@
+❚❙❘ VERSIÓN 1.4
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se crea entidad y dao de notificaciones
+├─• Se Crea al pagina de notificaciones
+├─• Se crean modifican appDataBase para incluir notificaciones
+├─• Se añaden el viewModel, el repositio y el factory para notificaciones
+├─• Se modifica el NavGrpah
+├─• Se añade a la pestaña de perfiles los mensajes de error al editar
+└─• Se añade la barra inferior y se adapata el TopBar
+->>> Falta crear pestaña de incidentes y chat, y toda la lógica de cada una
+->>> Revisar problema al ejecutar
+->>> Revisar problema al modificar los datos en el perfil, problema del verficacion del rut
+->>> Verficar el problema de iniciar sesión con el nombre de usaurio
+-x Se corrigen los errores de la pestaña de perfiles
+
 ❚❙❘ VERSIÓN 1.3
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se Establece una similitud 1 a 1 con el código entregado por el docente para adaptarlo al proyecto
-├─• Se Añaden Fotos y Rol para los usuarios
+├─• Se Añaden Fotos y Rol para los usuarios con sus respectivos Dao
 ├─• Se corrigen errores
 ├─• Se corrigen estilos anteriores del diseño
 ├─• Se Agrega pestaña de perfil con su lógica completa

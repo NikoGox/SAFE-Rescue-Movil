@@ -6,7 +6,7 @@ sealed class Route( //Clase sellada
     data object Home:Route("home")
     data object Register:Route("register")
     data object Login:Route("login")
-
-    object Profile : Route("profile")
+    object Notification:Route("notification")
+    object Profile:Route("profile")
 
 }

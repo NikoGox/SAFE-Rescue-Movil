@@ -1,5 +1,10 @@
 package com.movil.saferescue.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,10 +51,14 @@ fun LoginScreenVm(
     val state by vm.login.collectAsStateWithLifecycle()
 
     // Navegación automática en caso de éxito
-    if (state.success) {
-        LaunchedEffect(Unit) { // Usamos LaunchedEffect para una única ejecución controlada
-            vm.clearLoginResult()
+    LaunchedEffect(state.success) {
+        // Si el estado de éxito es `true` (y solo entonces)...
+        if (state.success) {
+            // ...ejecutamos la navegación.
             onLoginOkNavigateHome()
+            // Opcionalmente, puedes limpiar el estado aquí si es necesario para evitar
+            // que se vuelva a ejecutar si la pantalla se recompone.
+            // vm.clearLoginResult()
         }
     }
 
@@ -58,6 +67,7 @@ fun LoginScreenVm(
         identifier = state.identifier,
         pass = state.pass,
         identifierError = state.identifierError,
+        passError = state.passError, // <-- 2. PASAMOS EL passError DESDE EL ESTADO
         canSubmit = state.canSubmit,
         isSubmitting = state.isSubmitting,
         errorMsg = state.errorMsg,
@@ -77,6 +87,7 @@ private fun LoginScreen(
     identifier: String,
     pass: String,
     identifierError: String?,
+    passError: String?, // <-- 1. AÑADIMOS passError A LA FIRMA DE LA FUNCIÓN
     canSubmit: Boolean,
     isSubmitting: Boolean,
     errorMsg: String?,
@@ -95,12 +106,37 @@ private fun LoginScreen(
             .padding(26.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
+        Text(
+            text = "Bienvenido a",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = Color.Black
+        )
+        Spacer(Modifier.height(16.dp))
+
         // 1. Logo
         Image(
             painter = painterResource(id = R.drawable.sr_logo), // Reemplaza con tu logo
             contentDescription = "Logo",
             modifier = Modifier.size(150.dp)
         )
+
+        Spacer(Modifier.height(16.dp))
+
+        Text(
+            text = "SAFE Rescue",
+            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold), // Montserrat/Inter Bold
+            color = PrimaryBlue
+        )
+
+        Spacer(Modifier.height(10.dp))
+
+        Text(
+            text = "Accede a tu cuenta",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium), // Montserrat/Inter Medium
+            color = Color.Gray
+        )
+
         Spacer(Modifier.height(48.dp))
 
         // 2. Campo de Identificador (Email o Usuario)
@@ -114,15 +150,23 @@ private fun LoginScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true
         )
-        if (identifierError != null) {
-            Text(
-                text = identifierError,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.End,
-                modifier = Modifier.fillMaxWidth()
-            )
+        AnimatedVisibility(
+            visible = identifierError != null,
+            enter = fadeIn() + expandVertically(),
+            modifier = Modifier.fillMaxWidth(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            if (identifierError != null) {
+                Text(
+                    text = identifierError,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
+
         Spacer(Modifier.height(16.dp))
 
         // 3. Campo de Contraseña
@@ -131,6 +175,8 @@ private fun LoginScreen(
             onValueChange = onPassChange,
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Contraseña") },
+            // isError AHORA FUNCIONA CORRECTAMENTE
+            isError = passError != null,
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
             trailingIcon = {
                 IconButton(onClick = { showPass = !showPass }) {
@@ -144,6 +190,23 @@ private fun LoginScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             singleLine = true
         )
+        AnimatedVisibility(
+            visible = passError != null,
+            enter = fadeIn() + expandVertically(),
+            modifier = Modifier.fillMaxWidth(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            if (passError != null) {
+                Text(
+                    text = passError,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
         Spacer(Modifier.height(8.dp))
 
         // 4. "Recordarme" y "Olvidé Contraseña"
@@ -205,7 +268,8 @@ private fun LoginScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 16.dp),
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text("¿No tienes cuenta?")
             TextButton(onClick = onGoRegister) {

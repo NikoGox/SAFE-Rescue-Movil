@@ -50,6 +50,23 @@ fun validateUsername(username: String): String? {
     return null
 }
 
+// Valida que el RUN no esté vacío (solo para feedback en tiempo real)
+fun validateRun(run: String): String? {
+    if (run.isBlank()) return "El RUN es obligatorio"
+    if (!run.all { it.isDigit() }) return "El RUN debe contener solo números"
+    if (run.length !in 7..8) return "El RUN debe tener 7 u 8 dígitos"
+    return null
+}
+
+// Valida que el DV no esté vacío (solo para feedback en tiempo real)
+fun validateDv(dv: String): String? {
+    if (dv.isBlank()) return "El DV es obligatorio"
+    if (dv.length != 1) return "El DV debe tener 1 caracter"
+    if (!dv.first().isDigit() && dv.first().uppercaseChar() != 'K') return "Dígito verificador inválido"
+    return null
+}
+
+
 // Valida que el RUN sea un número válido y que el DV corresponda
 fun validateChileanRUN(run: String, dv: String): String? {
     if (run.isBlank()) return "El RUN es obligatorio"

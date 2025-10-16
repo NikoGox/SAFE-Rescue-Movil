@@ -1,5 +1,6 @@
 package com.movil.saferescue.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,14 +19,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movil.saferescue.R
 import com.movil.saferescue.ui.viewmodel.ProfileViewModel
 import com.movil.saferescue.ui.viewmodel.ProfileViewModelFactory
 
 @Composable
-fun ProfileScreen(factory: ProfileViewModelFactory) {
+fun ProfileScreen(
+    factory: ProfileViewModelFactory
+) {
     val vm: ProfileViewModel = viewModel(factory = factory)
     val state by vm.uiState.collectAsState()
 
@@ -45,11 +47,21 @@ fun ProfileScreen(factory: ProfileViewModelFactory) {
     ) {
         // Botón para activar/desactivar modo edición
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = vm::toggleEditMode) {
+            // La solución correcta
+            TextButton(
+                onClick = {
+                    if (state.isEditing) {
+                        vm.cancelEdit() // <-- Llama a la función correcta para CANCELAR
+                    } else {
+                        vm.toggleEditMode() // <-- Llama a la función para ENTRAR en modo edición
+                    }
+                }
+            ) {
                 Icon(if (state.isEditing) Icons.Default.Close else Icons.Default.Edit, contentDescription = "Editar")
                 Spacer(Modifier.width(4.dp))
                 Text(if (state.isEditing) "Cancelar" else "Editar Perfil")
             }
+
         }
 
         Spacer(Modifier.height(16.dp))
@@ -78,22 +90,52 @@ fun ProfileScreen(factory: ProfileViewModelFactory) {
         ProfileInfoRow(icon = Icons.Default.Work, label = "Rol", value = state.rol, enabled = false)
 
         // Nombre (Editable)
-        ProfileTextField(label = "Nombre Completo", value = state.name, onValueChange = vm::onNameChange, enabled = state.isEditing)
+        ProfileTextField(
+            label = "Nombre Completo",
+            value = state.name,
+            onValueChange = vm::onNameChange,
+            enabled = state.isEditing,
+            error = state.nameError // <-- ¡Añade esto!
+        )
 
         // Nombre de Usuario (Editable)
-        ProfileTextField(label = "Nombre de Usuario", value = state.username, onValueChange = vm::onUsernameChange, enabled = state.isEditing)
+        ProfileTextField(
+            label = "Nombre de Usuario",
+            value = state.username,
+            onValueChange = vm::onUsernameChange,
+            enabled = state.isEditing,
+            error = state.usernameError // <-- ¡Añade esto!
+        )
 
         // Teléfono (Editable)
-        ProfileTextField(label = "Teléfono", value = state.phone, onValueChange = vm::onPhoneChange, enabled = state.isEditing)
+        ProfileTextField(
+            label = "Teléfono",
+            value = state.phone,
+            onValueChange = vm::onPhoneChange,
+            enabled = state.isEditing,
+            error = state.phoneError // <-- ¡Añade esto!
+        )
 
         // RUN y DV (Editable)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.weight(1f)) {
-                ProfileTextField(label = "RUN", value = state.run, onValueChange = vm::onRunChange, enabled = state.isEditing)
+                ProfileTextField(
+                    label = "RUN",
+                    value = state.run,
+                    onValueChange = vm::onRunChange,
+                    enabled = state.isEditing,
+                    error = state.runError // <-- AÑADE ESTO
+                )
             }
             Text("-", Modifier.padding(horizontal = 8.dp))
             Box(modifier = Modifier.width(70.dp)) {
-                ProfileTextField(label = "DV", value = state.dv, onValueChange = vm::onDvChange, enabled = state.isEditing)
+                ProfileTextField(
+                    label = "DV",
+                    value = state.dv,
+                    onValueChange = vm::onDvChange,
+                    enabled = state.isEditing,
+                    error = state.dvError // <-- AÑADE ESTO
+                )
             }
         }
 
@@ -106,8 +148,10 @@ fun ProfileScreen(factory: ProfileViewModelFactory) {
         if (state.isEditing) {
             Button(
                 onClick = vm::saveChanges,
-                enabled = !state.isSubmitting,
-                modifier = Modifier.fillMaxWidth().height(50.dp)
+                enabled = !state.isSubmitting && state.canSave,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
             ) {
                 if(state.isSubmitting) CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
                 else Text("Guardar Cambios")
@@ -126,15 +170,40 @@ fun ProfileScreen(factory: ProfileViewModelFactory) {
 
 // Componente para campos de texto reutilizable
 @Composable
-private fun ProfileTextField(label: String, value: String, onValueChange: (String) -> Unit, enabled: Boolean) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        enabled = enabled,
-        singleLine = true
-    )
+private fun ProfileTextField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    enabled: Boolean,
+    error: String? = null
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp) // Mueve el padding aquí
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            enabled = enabled,
+            singleLine = true,
+            isError = error != null
+        )
+        AnimatedVisibility(visible = error != null) {
+            if (error != null) {
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(start = 16.dp)
+                )
+            }
+        }
+    }
 }
 
 // Componente para mostrar información no editable
@@ -145,7 +214,9 @@ private fun ProfileInfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector
         onValueChange = {},
         label = { Text(label) },
         leadingIcon = { Icon(icon, contentDescription = null) },
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         enabled = enabled,
         readOnly = true
     )

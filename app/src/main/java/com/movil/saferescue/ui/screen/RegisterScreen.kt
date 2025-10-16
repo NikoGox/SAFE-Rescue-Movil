@@ -2,6 +2,7 @@ package com.movil.saferescue.ui.screen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -129,14 +130,25 @@ private fun RegisterScreen(
             modifier = Modifier.size(120.dp) // Un poco más pequeño para dar espacio
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
+
+        Text(
+            text = "SAFE Rescue",
+            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold), // Montserrat/Inter Bold
+            color = PrimaryBlue
+        )
+
+        Spacer(Modifier.height(10.dp))
 
         Text(
             "Crear una Cuenta",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium), // Montserrat/Inter Medium
+            color = Color.Gray
+
         )
+
         Spacer(Modifier.height(24.dp))
+
 
         // --- CAMPOS DEL FORMULARIO ---
 
@@ -220,7 +232,8 @@ private fun RegisterScreen(
         // Navegación a Login
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text("¿Ya tienes una cuenta?")
             TextButton(onClick = onGoLogin) {

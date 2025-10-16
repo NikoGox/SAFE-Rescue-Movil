@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,11 +25,10 @@ import androidx.compose.ui.unit.dp
 fun AppTopBar(
     isAuthenticated: Boolean,
     onOpenDrawer: () -> Unit,
-    onGoProfile: () -> Unit,
     onGoLogin: () -> Unit,
     onGoRegister: () -> Unit,
+    onGoNotifications: () -> Unit,
     onLogout: () -> Unit
-
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val iconSize = 28.dp
@@ -44,7 +44,7 @@ fun AppTopBar(
         ),
         title = {
             Text(
-                text = "Bienvenido a SAFE Rescue",
+                text = "SAFE Rescue",
                 style = MaterialTheme.typography.titleLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -63,18 +63,11 @@ fun AppTopBar(
 
             if (isAuthenticated) {
                 // Usuario autenticado
-                IconButton(onClick = onGoProfile) {
+                IconButton(onClick = onGoNotifications) {
                     Icon(
-                        Icons.Filled.AccountCircle,
-                        contentDescription = "Perfil",
-                        modifier = Modifier.size(iconSize)
-                    )
-                }
-                IconButton(onClick = onLogout) {
-                    Icon(
-                        Icons.Filled.Logout,
-                        contentDescription = "Cerrar Sesión",
-                        modifier = Modifier.size(iconSize)
+                        imageVector = Icons.Filled.Notifications,
+                        contentDescription = "Notificaciones",
+                        modifier = Modifier.size(38.dp)
                     )
                 }
             } else {
@@ -95,50 +88,6 @@ fun AppTopBar(
                 }
             }
 
-            IconButton(onClick = { showMenu = true }) {
-                Icon(
-                    imageVector = Icons.Filled.MoreVert,
-                    contentDescription = "Más opciones",
-                    modifier = Modifier.size(iconSize)
-                )
-            }
-
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false }
-            ) {
-                if (isAuthenticated) {
-                    DropdownMenuItem(
-                        text = { Text("Mi Perfil") },
-                        onClick = {
-                            showMenu = false
-                            onGoProfile()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Cerrar Sesión") },
-                        onClick = {
-                            showMenu = false
-                            onLogout()
-                        }
-                    )
-                } else {
-                    DropdownMenuItem(
-                        text = { Text("Iniciar Sesión") },
-                        onClick = {
-                            showMenu = false
-                            onGoLogin()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Registrarse") },
-                        onClick = {
-                            showMenu = false
-                            onGoRegister()
-                        }
-                    )
-                }
-            }
         }
     )
 }

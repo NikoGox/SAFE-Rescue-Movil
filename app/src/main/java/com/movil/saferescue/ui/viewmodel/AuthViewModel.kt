@@ -93,10 +93,22 @@ class AuthViewModel(
             delay(500)
 
             val result = repository.login(s.identifier, s.pass)
-            _login.update {
-                if (result.isSuccess) {
+
+            // --- ESTA ES LA FORMA CORRECTA DE HACERLO ---
+            if (result.isSuccess) {
+                // 1. Obtenemos el usuario del resultado exitoso.
+                val user = result.getOrThrow()
+
+                // 2. Llamamos al repositorio para registrar el ID del usuario.
+                repository.setLoggedInUserId(user.id)
+
+                // 3. Actualizamos el estado de la UI.
+                _login.update {
                     it.copy(isSubmitting = false, success = true, errorMsg = null)
-                } else {
+                }
+            } else {
+                // En caso de fallo, solo actualizamos la UI con el error.
+                _login.update {
                     it.copy(
                         isSubmitting = false, success = false,
                         errorMsg = result.exceptionOrNull()?.message ?: "Error de autenticación"
@@ -105,6 +117,7 @@ class AuthViewModel(
             }
         }
     }
+
 
     fun clearLoginResult() {
         _login.update { it.copy(success = false, errorMsg = null) }

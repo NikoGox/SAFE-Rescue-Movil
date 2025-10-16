@@ -7,23 +7,31 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.movil.saferescue.data.local.foto.FotoDao // Cambiado el nombre del paquete
 import com.movil.saferescue.data.local.foto.FotoEntity // Cambiado el nombre del paquete
+import com.movil.saferescue.data.local.notification.NotificationDao
+import com.movil.saferescue.data.local.notification.NotificationEntity
 import com.movil.saferescue.data.local.user.TipoPerfilDao // <-- 1. IMPORTAR EL NUEVO DAO
 import com.movil.saferescue.data.local.user.TipoPerfilEntity
 import com.movil.saferescue.data.local.user.UserDao
 import com.movil.saferescue.data.local.user.UserEntity
+import com.movil.saferescue.navigation.Route
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.lang.System
+import kotlin.Long
+import kotlin.String
 
 @Database(
-    entities = [UserEntity::class, TipoPerfilEntity::class, FotoEntity::class],
-    version = 3,
+    entities = [UserEntity::class, TipoPerfilEntity::class, FotoEntity::class, NotificationEntity::class],
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun fotoDao(): FotoDao
-    abstract fun tipoPerfilDao(): TipoPerfilDao // <-- 2. AÑADIR EL MÉTODO ABSTRACTO
+    abstract fun tipoPerfilDao(): TipoPerfilDao
+
+    abstract fun notificationDao(): NotificationDao
 
     companion object {
         @Volatile
@@ -45,6 +53,7 @@ abstract class AppDatabase : RoomDatabase() {
                                 CoroutineScope(Dispatchers.IO).launch {
                                     // 3. USA LA INSTANCIA PASADA, NO VUELVAS A LLAMAR A getInstance()
                                     val userDao = database.userDao()
+                                    val NotificationDao = database.notificationDao()
                                     val fotoDao = database.fotoDao()
                                     val tipoPerfilDao = database.tipoPerfilDao() // Obtenemos el nuevo DAO
 
@@ -58,6 +67,10 @@ abstract class AppDatabase : RoomDatabase() {
                                             fechaSubida = System.currentTimeMillis() + 1000,
                                             url="https://img.freepik.com/foto-gratis/hombre-guapo-feliz-barba_74855-2827.jpg?semt=ais_hybrid&w=740&q=80"
                                         ),
+                                        FotoEntity(
+                                            fechaSubida = System.currentTimeMillis() + 1000,
+                                            url="https://media.istockphoto.com/id/1326417862/es/foto/mujer-joven-riendo-mientras-se-relaja-en-casa.jpg?s=612x612&w=0&k=20&c=BQHE9M8b6hixE_TB1XzuvxobnyD4ylKMTprVbrhPxOU="
+                                        )
 
                                         )
                                     val seedTipoPerfil= listOf(
@@ -69,6 +82,10 @@ abstract class AppDatabase : RoomDatabase() {
                                             rol = "Bombero",
                                             detalle = "Tiene acceso a la parte publica del sistema"
                                         ),
+                                        TipoPerfilEntity(
+                                            rol = "Ciudadano",
+                                            detalle = "Tiene acceso a la parte publica del sistema, con funciones limitadas"
+                                        )
 
                                         )
                                     val seedUser= listOf(
@@ -94,15 +111,47 @@ abstract class AppDatabase : RoomDatabase() {
                                             username = "Josesito",
                                             rol_id = 2,
                                             foto_id = 2
+                                        ),
+                                        UserEntity(
+                                            name = "Maria Juana",
+                                            email = "c@c.cl",
+                                            phone = "12345678",
+                                            password = "Maria123!",
+                                            run = "12345678",
+                                            dv = "k",
+                                            username = "Mari",
+                                            rol_id = 3,
+                                            foto_id = 3
                                         )
+
+                                    )
+                                    val seedNotification= listOf(
+                                        NotificationEntity(
+                                            titulo = "Alerta de incendio",
+                                            mensaje = "Se notifica de una nueva solicitud de asistencia",
+                                            fechaSubida = System.currentTimeMillis() + 1000,
+                                            isRead = false
+                                        ),
+                                        NotificationEntity(
+                                            titulo = "Ticket de ayuda",
+                                            mensaje = "Se solicita ayuda con el uso de una función de la aplicación",
+                                            fechaSubida = System.currentTimeMillis() + 1000,
+                                            isRead = false
+                                        ),
+                                        NotificationEntity(
+                                            titulo = "Peligro de incendio",
+                                            mensaje = "Se notifica de un incendio en la zona, tenga precaución",
+                                            fechaSubida = System.currentTimeMillis() + 1000,
+                                            isRead = false
+                                        ),
 
                                     )
                                     // Lógica de inserción corregida
                                     if (userDao.count() == 0) {
                                         seedFoto.forEach { fotoDao.insert(it) }
-                                        // 4. USA EL DAO CORRECTO PARA CADA ENTIDAD
                                         seedTipoPerfil.forEach { tipoPerfilDao.insertTipoPerfil(it) }
                                         seedUser.forEach { userDao.insertUsuario(it) }
+                                        seedNotification.forEach { NotificationDao.insertNotification(it) }
                                     }
                                 }
                             }

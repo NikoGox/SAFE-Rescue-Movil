@@ -1,5 +1,6 @@
 package com.movil.saferescue.ui.components
 
+import android.app.Notification
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -31,6 +32,7 @@ fun AppDrawer(
     onGoProfile: () -> Unit,
     onGoLogin: () -> Unit,
     onGoRegister: () -> Unit,
+    onGoNotifications: () -> Unit,
     onLogout: () -> Unit
 ) {
     ModalDrawerSheet {
@@ -81,6 +83,15 @@ fun AppDrawer(
                 selected = false,
                 onClick = {
                     onGoProfile()
+                    onCloseDrawer()
+                }
+            )
+            NavigationDrawerItem(
+                icon = { Icon(imageVector = Icons.Filled.Notifications, contentDescription = "Notificaciones") },
+                label = { Text("Notificaciones") },
+                selected = false,
+                onClick = {
+                    onGoNotifications()
                     onCloseDrawer()
                 }
             )

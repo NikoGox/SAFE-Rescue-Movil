@@ -8,6 +8,6 @@ import androidx.room.OnConflictStrategy
 @Dao
 interface TipoPerfilDao {
     
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertTipoPerfil(tipoPerfil: TipoPerfilEntity)
 }
