@@ -1,3 +1,16 @@
+❚❙❘ VERSIÓN 1.5.1
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se corrigen errores de databases, modificando lógica y agregando un insertAll en cada Dao
+├─• Se cambian las fotos default de perfil e incidente
+├─• Se modifica la lógica de user entity, dao y repository para poder recibir correctamente la foto y el tipo de usuario
+├─• Se agregala función que permite recordar el ultimo usuario ingresado con el checkbox recuerdame
+├─• Se soluciona problema de caída en mensajes
+├─• Cambio de lógica de AuthViewModel permitiendo que reciba el contexto además del repositorio
+└─• Se agrega la versión en pantalla de inicio de sesión
+->>> Agregar una función que permita cambiar la fotografía del usuario
+->>> Agregar función de redirección para recuperar contraseña
+
+
 ❚❙❘ VERSIÓN 1.5
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se implementó README con breve descripcion del proyecto y cambios de la ultima versión.

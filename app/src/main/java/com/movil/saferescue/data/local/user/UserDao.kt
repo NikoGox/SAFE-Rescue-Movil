@@ -57,10 +57,31 @@ interface UserDao {
     @Update
     suspend fun updateUser(user: UserEntity)
 
-    /**
-     * Obtiene los datos combinados para mostrar el perfil de un usuario.
-     * Esta función es muy útil, ¡buen trabajo al crearla!
-     */
-    @Query("SELECT u.name, u.email, t.rol, f.url FROM users u JOIN tipo_perfil t ON u.rol_id = t.id JOIN fotos f ON u.foto_id = f.id WHERE u.id = :id LIMIT 1")
-    suspend fun getPerfil(id: Long): PerfilUsuario?
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(users: List<UserEntity>)
+
+    @Query("SELECT * FROM tipo_perfil WHERE id = :rolId")
+    suspend fun getRolById(rolId: Long): TipoPerfilEntity?
+
+    @Query("""
+        SELECT
+            u.id,
+            u.name,
+            u.username,
+            u.email,
+            u.phone,
+            u.run,
+            u.dv,
+            f.url AS fotoUrl,      
+            r.rol AS rolName,   
+            u.foto_id AS fotoId,   
+            u.rol_id AS rolId      
+        FROM users AS u
+        LEFT JOIN tipo_perfil AS r ON u.rol_id = r.id
+        LEFT JOIN fotos AS f ON u.foto_id = f.id 
+        WHERE u.id = :userId
+    """)
+    suspend fun getUserProfileById(userId: Long): UserProfile?
 }
+
+

@@ -1,18 +1,20 @@
 package com.movil.saferescue.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.movil.saferescue.data.repository.UserRepository
 
+class AuthViewModelFactory(
+    private val userRepository: UserRepository,
+    private val context: Context
+) : ViewModelProvider.Factory {
 
-class AuthViewModelFactory (
-    private val repository: UserRepository
-): ViewModelProvider.Factory{
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        //si solicitamos el auth lo creamos con el repositorio
-        if(modelClass.isAssignableFrom(AuthViewModel::class.java)){
-            return AuthViewModel(repository) as T
+        if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
+            return AuthViewModel(userRepository) as T
         }
-        throw IllegalArgumentException("Viewmodel Desconocido: ${modelClass.name}")
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

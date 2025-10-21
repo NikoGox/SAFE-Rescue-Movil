@@ -10,8 +10,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.movil.saferescue.domain.validation.*
 import kotlinx.coroutines.flow.asStateFlow
-
-// ----------------- ESTADOS DE UI (observable con StateFlow) -----------------
+import kotlinx.coroutines.flow.first
 
 data class LoginUiState(
     val identifier: String = "",
@@ -24,8 +23,6 @@ data class LoginUiState(
     val errorMsg: String? = null
 )
 
-// --- CORRECCIÓN 1: Simplifiqué el estado de registro para que coincida con el código ---
-// He eliminado 'rolIdError' y 'runDvError' que no se usaban o eran incorrectos.
 data class RegisterUiState(
     val name: String = "",
     val email: String = "",
@@ -36,7 +33,7 @@ data class RegisterUiState(
     val dv: String = "",
     val username: String = "",
     val fotoUrl: String = "",
-    val rolId: Long = 2L, // Asumimos rol por defecto 2 = Bombero
+    val rolId: Long = 2L,
 
     val nameError: String? = null,
     val emailError: String? = null,
@@ -65,7 +62,27 @@ class AuthViewModel(
     val register: StateFlow<RegisterUiState> = _register.asStateFlow()
 
 
-    // ----------------- LOGIN: handlers y envío (Sin cambios) -----------------
+    init {
+        loadSavedPreferences()
+    }
+
+    /**
+     * Carga el identificador guardado desde el UserRepository (que usa DataStore)
+     * y lo establece en el estado de la UI.
+     */
+    private fun loadSavedPreferences() {
+        viewModelScope.launch {
+            // Usamos .first() para tomar solo el primer valor emitido por el Flow.
+            val savedIdentifier = repository.savedIdentifierFlow.first()
+            _login.update {
+                it.copy(identifier = savedIdentifier)
+            }
+            // Después de cargar el valor, revalidamos si el botón de submit debe estar activo.
+            recomputeLoginCanSubmit()
+        }
+    }
+
+    // ----------------- LOGIN: handlers y envío -----------------
     fun onLoginIdentifierChange(value: String) {
         val error = if (value.isBlank()) "El campo es obligatorio" else null
         _login.update { it.copy(identifier = value, identifierError = error) }
@@ -79,35 +96,31 @@ class AuthViewModel(
 
     private fun recomputeLoginCanSubmit() {
         val s = _login.value
-        val can = s.identifierError == null &&
-                s.identifier.isNotBlank() &&
-                s.pass.isNotBlank()
+        val can = s.identifier.isNotBlank() && s.pass.isNotBlank()
         _login.update { it.copy(canSubmit = can) }
     }
 
-    fun submitLogin() {
+    // --- 4. FUNCIÓN submitLogin ACTUALIZADA ---
+    /**
+     * Inicia el proceso de login. Ahora recibe el estado del checkbox "Recordarme".
+     */
+    fun submitLogin(rememberMe: Boolean) {
         val s = _login.value
         if (!s.canSubmit || s.isSubmitting) return
         viewModelScope.launch {
             _login.update { it.copy(isSubmitting = true, errorMsg = null, success = false) }
             delay(500)
 
-            val result = repository.login(s.identifier, s.pass)
+            // Llamamos a la nueva función de login del repositorio, pasándole el estado de `rememberMe`.
+            val result = repository.login(s.identifier, s.pass, rememberMe)
 
-            // --- ESTA ES LA FORMA CORRECTA DE HACERLO ---
             if (result.isSuccess) {
-                // 1. Obtenemos el usuario del resultado exitoso.
                 val user = result.getOrThrow()
-
-                // 2. Llamamos al repositorio para registrar el ID del usuario.
                 repository.setLoggedInUserId(user.id)
-
-                // 3. Actualizamos el estado de la UI.
                 _login.update {
                     it.copy(isSubmitting = false, success = true, errorMsg = null)
                 }
             } else {
-                // En caso de fallo, solo actualizamos la UI con el error.
                 _login.update {
                     it.copy(
                         isSubmitting = false, success = false,
@@ -124,10 +137,8 @@ class AuthViewModel(
     }
 
 
-    // ----------------- REGISTRO: handlers y envío -----------------
-
-    // --- CORRECCIÓN 2: Eliminadas todas las funciones handler duplicadas y unificadas ---
-    // Cada función ahora sigue el mismo patrón: recibe un valor, lo valida y llama a recomputeRegisterCanSubmit()
+    // ----------------- REGISTRO: handlers y envío (Sin cambios) -----------------
+    // Toda la lógica de registro se mantiene exactamente igual.
 
     fun onNameChange(value: String) {
         val filtered = value.filter { it.isLetter() || it.isWhitespace() }
@@ -152,7 +163,6 @@ class AuthViewModel(
 
     fun onRegisterPassChange(value: String) {
         _register.update { it.copy(pass = value, passError = validateStrongPassword(value)) }
-        // También re-validamos la confirmación de contraseña cada vez que la contraseña principal cambia
         _register.update { it.copy(confirmError = validateConfirm(it.pass, it.confirm)) }
         recomputeRegisterCanSubmit()
     }
@@ -169,11 +179,8 @@ class AuthViewModel(
         recomputeRegisterCanSubmit()
     }
 
-    // --- CORRECCIÓN 3: Lógica de validación del RUN separada en dos handlers ---
     fun onRunChange(value: String) {
         val digitsOnly = value.filter { it.isDigit() }
-        // La validación del RUN completo se hace en una función externa `validateChileanRUN`,
-        // que devuelve un solo String de error. Lo asignamos a `runError`.
         val runError = validateChileanRUN(digitsOnly, _register.value.dv)
         _register.update {
             it.copy(run = digitsOnly, runError = runError, dvError = runError)
@@ -191,20 +198,17 @@ class AuthViewModel(
     }
 
     fun onFotoUrlChange(value: String) {
-        // La URL puede estar vacía, así que solo validamos si no está en blanco.
         _register.update { it.copy(fotoUrl = value, fotoUrlError = if (value.isNotBlank()) validateUrl(value) else null) }
         recomputeRegisterCanSubmit()
     }
 
     fun onRolIdChange(value: Long) {
-        // Esta función parece no usarse en la UI, pero la mantenemos correcta
         _register.update { it.copy(rolId = value) }
         recomputeRegisterCanSubmit()
     }
 
     private fun recomputeRegisterCanSubmit() {
         val s = _register.value
-        // --- CORRECCIÓN 4: Lista de errores actualizada para coincidir con el UiState ---
         val noErrors = listOf(s.nameError, s.emailError, s.phoneError, s.passError, s.confirmError, s.usernameError, s.runError, s.dvError, s.fotoUrlError).all { it == null }
         val filled = s.name.isNotBlank() && s.email.isNotBlank() && s.phone.isNotBlank() && s.pass.isNotBlank() && s.confirm.isNotBlank() && s.username.isNotBlank() && s.run.isNotBlank() && s.dv.isNotBlank() && s.rolId > 0
         _register.update { it.copy(canSubmit = noErrors && filled) }
@@ -246,4 +250,3 @@ class AuthViewModel(
         _register.update { it.copy(success = false, errorMsg = null) }
     }
 }
-

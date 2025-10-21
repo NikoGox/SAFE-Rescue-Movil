@@ -101,6 +101,8 @@ dependencies {
 
     implementation("org.mindrot:jbcrypt:0.4")
 
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
 
     //Importante despues sintonizar las librerias
 }

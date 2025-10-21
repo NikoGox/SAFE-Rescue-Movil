@@ -34,18 +34,29 @@ data class UserEntity(
     val email: String,
     val phone: String,
     val password: String,
-    // 4. Asegúrate de que el índice esté creado para mejorar el rendimiento
     @ColumnInfo(name = "foto_id", index = true)
-    var foto_id: Long?,
+    var foto_id: Long,
 
     @ColumnInfo(name = "rol_id", index = true)
     var rol_id: Long
 )
 
-data class PerfilUsuario(
+/**
+ * Modelo de Dominio que representa los datos completos del perfil de un usuario,
+ * combinando información de varias tablas para ser consumida por la UI.
+ * (Reutilizado y mejorado a partir de la clase PerfilUsuario original).
+ */
+data class UserProfile(
+    val id: Long,
     val name: String,
+    val username: String,
     val email: String,
-    val rol: String,
-    val url: String
+    val phone: String,
+    val run: String,
+    val dv: String,
+    val fotoUrl: String?,
+    val rolName: String,
+    val fotoId: Long,
+    val rolId: Long
 )
 

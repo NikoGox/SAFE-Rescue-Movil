@@ -59,4 +59,8 @@ interface IncidenteDao {
     @Query("SELECT * FROM incidente ORDER BY fechaRegistro DESC")
     fun getAllIncidentes(): Flow<List<IncidenteEntity>>
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(incidentes: List<IncidenteEntity>)
+
+
 }

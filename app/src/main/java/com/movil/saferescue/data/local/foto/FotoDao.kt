@@ -16,4 +16,8 @@ interface FotoDao {
 
     @Query("SELECT * FROM fotos WHERE id = :fotoId LIMIT 1")
     suspend fun findFotoById(fotoId: Long): FotoEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(fotos: List<FotoEntity>)
+
 }

@@ -12,21 +12,17 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 1.5
+### ❚❙❘ VERSIÓN 1.5.1
 
-> <br>• Se implementó README con breve descripcion del proyecto y cambios de la ultima versión.
-> <br>• Se crea la entidad, Dao, repositorio de Incidente
-> <br>• Se modifica el navgraph y los componentes para manejar los vínculos de incidente
-> <br>• Se crea screen de incidente
-> <br>• Se crea el ViewModel y factory de incidente
-> <br>• Se modifica la entidad, Dao, repositorio de Notificaciones.
-> <br>• Se crea la entidad, Dao de tipo mensaje
-> <br>• Se modifica el navgraph y los componentes para manejar los vínculos de chat
-> <br>• Se crea screen de chat
-> <br>• Se corrigen errores de compliacion
-> <br>• Se modifica el ViewModel y factory de notificaciones para que incluya relaciones y se reutiliza para mensajes
-> <br> >>> Se deja pendiente el uso de foto Async.
-> <br> >>> Corregir error que se cae al intentar mandar mensajes.
+> <br>• Se corrigen errores de databases, modificando lógica y agregando un insertAll en cada Dao
+> <br>• Se cambian las fotos default de perfil e incidente
+> <br>• Se modifica la lógica de user entity, dao y repository para poder recibir correctamente la foto y el tipo de usuario
+> <br>• Se agregala función que permite recordar el ultimo usuario ingresado con el checkbox recuerdame
+> <br>• Se soluciona problema de caída en mensajes
+> <br>• Cambio de lógica de AuthViewModel permitiendo que reciba el contexto además del repositorio
+> <br>• Se agrega la versión en pantalla de inicio de sesión
+> <br> >>> Agregar una función que permita cambiar la fotografía del usuario
+> <br> >>> Agregar función de redirección para recuperar contraseña
 > <br> 
 
 ---
@@ -48,13 +44,7 @@ La valentía y la preparación salvan vidas. La aplicación equipa a los bombero
 </p>
 
 ## Tecnologías Utilizadas
-* **React**
-* **Vite**
-* **Node.js**
-* **TypeScript (TSX)**
-* **CSS3**
-* **SASS**
-
+* **Kotlin**
 
 <br>
 

@@ -9,4 +9,8 @@ interface TipoPerfilDao {
     
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertTipoPerfil(tipoPerfil: TipoPerfilEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(tipoPerfiles: List<TipoPerfilEntity>)
+
 }

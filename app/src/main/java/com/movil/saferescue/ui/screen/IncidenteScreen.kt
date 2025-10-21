@@ -146,8 +146,8 @@ fun IncidentCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             Image(
-                painter = painterResource(id = R.drawable.sr_logo), // Reemplazar con coil/glide para state.fotoUrl
-                contentDescription = "Foto de Perfil (opcional)",
+                painter = painterResource(id = R.drawable.default_incident), // Reemplazar con coil/glide para state.fotoUrl
+                contentDescription = "Foto de incidente",
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape),

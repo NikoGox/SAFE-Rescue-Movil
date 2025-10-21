@@ -139,4 +139,8 @@ interface NotificationDao {
     """)
     fun getMessagesWithSender(tipoId: Long): Flow<List<NotificationWithSender>>
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(notificaciones: List<NotificationEntity>)
+
+
 }

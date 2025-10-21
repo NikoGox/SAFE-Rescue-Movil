@@ -3,9 +3,9 @@ package com.movil.saferescue.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.movil.saferescue.data.local.user.UserEntity
+import com.movil.saferescue.data.local.user.UserProfile
 import com.movil.saferescue.data.repository.UserRepository
-import com.movil.saferescue.domain.validation.validateDv
-import com.movil.saferescue.domain.validation.validateRun
+import com.movil.saferescue.domain.validation.validateChileanRUN
 import com.movil.saferescue.domain.validation.validateNameLettersOnly
 import com.movil.saferescue.domain.validation.validatePhoneDigitsOnly
 import com.movil.saferescue.domain.validation.validateUsername
@@ -15,28 +15,35 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+// 2. Data Class actualizada para usar el modelo de dominio
 data class ProfileUiState(
+    // Datos originales para poder cancelar la edición
+    val originalUser: UserProfile? = null,
+
+    // Datos y errores de los campos editables
+    val id: Long? = null,
+    val name: String = "",
+    val nameError: String? = null,
+    val username: String = "",
+    val usernameError: String? = null,
+    val phone: String = "",
+    val phoneError: String? = null,
+    val run: String = "",
+    val dv: String = "",
+    val runAndDvError: String? = null, // Un solo error para RUN y DV
+    val fotoUrl: String = "",
+
+    // Campos no editables que solo se muestran
     val email: String = "",
     val rol: String = "",
-    // --- Datos y errores de los campos editables ---
-    val name: String = "",
-    val nameError: String? = null, // Error para el nombre
-    val username: String = "",
-    val usernameError: String? = null, // Error para el username
-    val phone: String = "",
-    val phoneError: String? = null, // Error para el teléfono
-    val run: String = "",
-    val runError: String? = null,
-    val dv: String = "",
-    val dvError: String? = null,
-    val fotoUrl: String = "",
-    // --- Estados de la UI ---
+
+    // Estados de la UI
     val isLoading: Boolean = true,
     val isEditing: Boolean = false,
-    val canSave: Boolean = false, // Para habilitar/deshabilitar el botón de guardar
+    val canSave: Boolean = false,
     val isSubmitting: Boolean = false,
     val successMsg: String? = null,
-    val errorMsg: String? = null // Error general (del guardado, no de los campos)
+    val errorMsg: String? = null
 )
 
 class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
@@ -44,105 +51,101 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    private var lastSavedState: ProfileUiState? = null
-
     init {
         loadUserProfile()
     }
 
-    private fun loadUserProfile() {
+    // 3. Lógica de carga COMPLETAMENTE SIMPLIFICADA
+    fun loadUserProfile() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val user = repository.getLoggedInUser()
-            if (user != null) {
-                val fotoUrl = repository.getFotoUrlById(user.foto_id) ?: ""
-                val initialState = ProfileUiState(
-                    isLoading = false,
-                    email = user.email,
-                    rol = if (user.rol_id == 2L) "Bombero" else "Usuario",
-                    name = user.name,
-                    username = user.username,
-                    phone = user.phone,
-                    run = user.run,
-                    dv = user.dv,
-                    fotoUrl = fotoUrl,
-                    canSave = true // Inicialmente se puede guardar
-                )
-                _uiState.value = initialState
-                lastSavedState = initialState
+            // Llama al método que ya hace todo el trabajo pesado
+            val userProfile = repository.getLoggedInUser()
+
+            if (userProfile != null) {
+                // El repositorio ya nos dio el nombre del rol y la URL de la foto.
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        originalUser = userProfile, // Guardamos el estado original
+                        id = userProfile.id,
+                        name = userProfile.name,
+                        username = userProfile.username,
+                        phone = userProfile.phone,
+                        run = userProfile.run,
+                        dv = userProfile.dv,
+                        email = userProfile.email,
+                        rol = userProfile.rolName, // <-- Nombre del rol ya viene listo
+                        fotoUrl = userProfile.fotoUrl ?: "" // <-- URL de la foto ya viene lista
+                    )
+                }
             } else {
-                _uiState.update { it.copy(isLoading = false, errorMsg = "No se pudo encontrar el perfil.") }
+                _uiState.update { it.copy(isLoading = false, errorMsg = "No se pudo cargar el perfil del usuario.") }
             }
         }
     }
 
-    // --- CAMBIO 2: Handlers de edición AHORA validan en tiempo real ---
+    // --- Handlers de edición (sin cambios, pero ahora más robustos) ---
 
     fun onNameChange(newName: String) {
-        val error = validateNameLettersOnly(newName)
-        _uiState.update { it.copy(name = newName, nameError = error) }
+        _uiState.update { it.copy(name = newName, nameError = validateNameLettersOnly(newName)) }
         validateAllFields()
     }
 
     fun onUsernameChange(newUsername: String) {
-        val error = validateUsername(newUsername)
-        _uiState.update { it.copy(username = newUsername, usernameError = error) }
+        _uiState.update { it.copy(username = newUsername, usernameError = validateUsername(newUsername)) }
         validateAllFields()
     }
 
     fun onPhoneChange(newPhone: String) {
-        val error = validatePhoneDigitsOnly(newPhone)
-        _uiState.update { it.copy(phone = newPhone, phoneError = error) }
+        _uiState.update { it.copy(phone = newPhone, phoneError = validatePhoneDigitsOnly(newPhone)) }
         validateAllFields()
     }
 
-    // El RUN/DV y la foto no tienen validación en tiempo real en este ejemplo,
-    // pero se podría añadir de la misma forma.
     fun onRunChange(newRun: String) {
-        val error = validateRun(newRun)
-        _uiState.update { it.copy(run = newRun, runError = error) }
+        _uiState.update { it.copy(run = newRun) }
+        // Validamos el RUN y el DV juntos
+        val error = validateChileanRUN(_uiState.value.run, _uiState.value.dv)
+        _uiState.update { it.copy(runAndDvError = error) }
         validateAllFields()
     }
+
     fun onDvChange(newDv: String) {
-        val error = validateDv(newDv)
-        _uiState.update { it.copy(dv = newDv, dvError = error) }
+        _uiState.update { it.copy(dv = newDv.uppercase()) }
+        val error = validateChileanRUN(_uiState.value.run, _uiState.value.dv)
+        _uiState.update { it.copy(runAndDvError = error) }
         validateAllFields()
     }
-    fun onFotoUrlChange(newUrl: String) { _uiState.update { it.copy(fotoUrl = newUrl) } }
 
+    // --- Lógica de UI (Guardar, Cancelar, etc.) ---
 
-    /**
-     * Comprueba si todos los campos son válidos para habilitar el botón de Guardar.
-     */
     private fun validateAllFields() {
         _uiState.update {
-            // --- ¡ESTA ES LA LÓGICA CORRECTA! ---
-            // Comprueba si alguno de los campos de error tiene un valor (no es nulo).
-            val hasErrors = it.nameError != null ||
-                    it.usernameError != null ||
-                    it.phoneError != null ||
-                    it.runError != null ||
-                    it.dvError != null
-            // `canSave` será `true` solo si `hasErrors` es `false`.
+            val hasErrors = it.nameError != null || it.usernameError != null || it.phoneError != null || it.runAndDvError != null
             it.copy(canSave = !hasErrors)
         }
     }
 
-
-            // --- CAMBIO 3: Lógica de Cancelación AHORA limpia todos los errores ---
     fun cancelEdit() {
-        lastSavedState?.let {
-            // Restauramos los datos Y nos aseguramos de que todos los errores se limpien.
-            _uiState.value = it.copy(
-                isEditing = false,
-                nameError = null,
-                usernameError = null,
-                phoneError = null,
-                runError = null,
-                dvError = null,
-                errorMsg = null,
-                successMsg = null
-            )
+        _uiState.update { currentState ->
+            currentState.originalUser?.let { original ->
+                // Restaura todo a partir del 'originalUser' guardado
+                currentState.copy(
+                    isEditing = false,
+                    name = original.name,
+                    username = original.username,
+                    phone = original.phone,
+                    run = original.run,
+                    dv = original.dv,
+                    // Limpiamos todos los errores
+                    nameError = null,
+                    usernameError = null,
+                    phoneError = null,
+                    runAndDvError = null,
+                    errorMsg = null,
+                    successMsg = null
+                )
+            } ?: currentState // Si no hay original, no hagas nada
         }
     }
 
@@ -150,40 +153,44 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
         _uiState.update { it.copy(isEditing = !it.isEditing) }
     }
 
+    // 4. Lógica de guardado SIMPLIFICADA
     fun saveChanges() {
         val currentState = _uiState.value
-        if (!currentState.canSave) return // No intentar guardar si hay errores
+        if (!currentState.canSave || currentState.id == null) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isSubmitting = true, errorMsg = null) }
-            val loggedInUser = repository.getLoggedInUser() ?: return@launch
+            _uiState.update { it.copy(isSubmitting = true, errorMsg = null, successMsg = null) }
 
-            val updatedUser = loggedInUser.copy(
+            // Creamos una UserEntity a partir del estado de la UI para enviarla al repositorio
+            val updatedUserEntity = UserEntity(
+                id = currentState.id,
                 name = currentState.name,
                 username = currentState.username,
+                email = currentState.email,
                 phone = currentState.phone,
                 run = currentState.run,
-                dv = currentState.dv
-            )
+                dv = currentState.dv,
+                password = "",
+                foto_id = currentState.originalUser?.fotoId ?: 1,
+                rol_id = currentState.originalUser?.rolId ?: 2 )
 
-            val result = repository.updateUser(updatedUser)
+            val result = repository.updateUser(updatedUserEntity)
+
             if (result.isSuccess) {
-                val newSavedState = currentState.copy(
-                    isEditing = false,
-                    isSubmitting = false,
-                    successMsg = "¡Perfil actualizado!",
-                    // Limpiamos errores de campo al guardar con éxito
-                    nameError = null,
-                    usernameError = null,
-                    phoneError = null
-                )
-                lastSavedState = newSavedState
-                _uiState.value = newSavedState
+                // Volvemos a cargar el perfil para obtener la información fresca y actualizada
+                loadUserProfile()
+                _uiState.update {
+                    it.copy(
+                        isEditing = false,
+                        isSubmitting = false,
+                        successMsg = "¡Perfil actualizado con éxito!"
+                    )
+                }
             } else {
                 _uiState.update {
                     it.copy(
                         isSubmitting = false,
-                        errorMsg = result.exceptionOrNull()?.message ?: "Error al guardar."
+                        errorMsg = result.exceptionOrNull()?.message ?: "Error al guardar el perfil."
                     )
                 }
             }

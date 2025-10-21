@@ -31,8 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.movil.saferescue.R // Asegúrate de tener tu logo en res/drawable
-import com.movil.saferescue.ui.theme.PrimaryBlue // Colores personalizados
+import com.movil.saferescue.R
+import com.movil.saferescue.ui.theme.PrimaryBlue
 import com.movil.saferescue.ui.theme.SecondaryRed
 import com.movil.saferescue.ui.viewmodel.AuthViewModel
 import com.movil.saferescue.ui.viewmodel.AuthViewModelFactory
@@ -49,16 +49,13 @@ fun LoginScreenVm(
 ) {
     val vm: AuthViewModel = viewModel(factory = factory)
     val state by vm.login.collectAsStateWithLifecycle()
+    var rememberMe by remember { mutableStateOf(false) }
 
     // Navegación automática en caso de éxito
     LaunchedEffect(state.success) {
-        // Si el estado de éxito es `true` (y solo entonces)...
         if (state.success) {
-            // ...ejecutamos la navegación.
             onLoginOkNavigateHome()
-            // Opcionalmente, puedes limpiar el estado aquí si es necesario para evitar
-            // que se vuelva a ejecutar si la pantalla se recompone.
-            // vm.clearLoginResult()
+            vm.clearLoginResult()
         }
     }
 
@@ -71,9 +68,11 @@ fun LoginScreenVm(
         canSubmit = state.canSubmit,
         isSubmitting = state.isSubmitting,
         errorMsg = state.errorMsg,
+        rememberMe = rememberMe,
         onIdentifierChange = vm::onLoginIdentifierChange,
         onPassChange = vm::onLoginPassChange,
-        onSubmit = vm::submitLogin,
+        onRememberMeChange = { rememberMe = it },
+        onSubmit = { vm.submitLogin(rememberMe) },
         onGoRegister = onGoRegister
     )
 }
@@ -87,18 +86,18 @@ private fun LoginScreen(
     identifier: String,
     pass: String,
     identifierError: String?,
-    passError: String?, // <-- 1. AÑADIMOS passError A LA FIRMA DE LA FUNCIÓN
+    passError: String?,
     canSubmit: Boolean,
     isSubmitting: Boolean,
     errorMsg: String?,
+    rememberMe: Boolean,
     onIdentifierChange: (String) -> Unit,
     onPassChange: (String) -> Unit,
+    onRememberMeChange: (Boolean) -> Unit,
     onSubmit: () -> Unit,
     onGoRegister: () -> Unit
 ) {
-    // --- NUEVO DISEÑO VISUAL ---
     var showPass by remember { mutableStateOf(false) }
-    var rememberMe by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -175,7 +174,6 @@ private fun LoginScreen(
             onValueChange = onPassChange,
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Contraseña") },
-            // isError AHORA FUNCIONA CORRECTAMENTE
             isError = passError != null,
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
             trailingIcon = {
@@ -209,7 +207,6 @@ private fun LoginScreen(
 
         Spacer(Modifier.height(8.dp))
 
-        // 4. "Recordarme" y "Olvidé Contraseña"
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -218,7 +215,7 @@ private fun LoginScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
                     checked = rememberMe,
-                    onCheckedChange = { rememberMe = it },
+                    onCheckedChange = onRememberMeChange,
                     colors = CheckboxDefaults.colors(checkedColor = PrimaryBlue)
                 )
                 Text("Recordarme", style = MaterialTheme.typography.bodyMedium)
@@ -233,7 +230,6 @@ private fun LoginScreen(
         }
         Spacer(Modifier.height(32.dp))
 
-        // 5. Botón de Iniciar Sesión
         Button(
             onClick = onSubmit,
             enabled = canSubmit && !isSubmitting,
@@ -254,7 +250,6 @@ private fun LoginScreen(
             }
         }
 
-        // 6. Mensaje de Error global
         if (errorMsg != null) {
             Text(
                 text = errorMsg,
@@ -263,7 +258,6 @@ private fun LoginScreen(
             )
         }
 
-        // 7. Navegación a Registro
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -276,5 +270,13 @@ private fun LoginScreen(
                 Text("Regístrate", color = PrimaryBlue, fontWeight = FontWeight.Bold)
             }
         }
+
+        Spacer(Modifier.height(32.dp))
+
+        Text(
+            text = "Versión 1.5.1",
+            color = Color.Gray,
+            modifier = Modifier.padding(top = 8.dp)
+        )
     }
 }

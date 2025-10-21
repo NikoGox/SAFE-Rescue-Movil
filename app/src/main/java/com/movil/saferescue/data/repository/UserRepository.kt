@@ -1,60 +1,104 @@
 package com.movil.saferescue.data.repository
 
-import androidx.compose.ui.semantics.password
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import com.movil.saferescue.data.local.foto.FotoDao
 import com.movil.saferescue.data.local.foto.FotoEntity
 import com.movil.saferescue.data.local.user.UserDao
 import com.movil.saferescue.data.local.user.UserEntity
-// --- CAMBIO 1: Importar los validadores ---
-import com.movil.saferescue.domain.validation.validateConfirm
-import com.movil.saferescue.domain.validation.validateStrongPassword
-import com.movil.saferescue.domain.validation.validateChileanRUN
+import com.movil.saferescue.data.local.user.UserProfile
 import com.movil.saferescue.domain.validation.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+// --- 1. LÓGICA DE DATASTORE AÑADIDA ---
+// Se crea una extensión de Context para tener una única instancia de DataStore en toda la app.
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
+
+// Se definen las claves para acceder a los datos guardados. Es como el nombre de una columna.
+private object PreferencesKeys {
+    val REMEMBER_ME = booleanPreferencesKey("remember_me_status")
+    val SAVED_IDENTIFIER = stringPreferencesKey("saved_user_identifier")
+}
+// ------------------------------------
+
+// --- 2. CONSTRUCTOR ACTUALIZADO ---
+// Ahora necesita el `Context` para poder inicializar y usar DataStore.
 class UserRepository(
     private val userDao: UserDao,
-    private val fotoDao: FotoDao
+    private val fotoDao: FotoDao,
+    private val context: Context // Se añade el contexto
 ) {
-    // --- CAMBIO 2: Variable para mantener el ID del usuario logueado ---
-    // Usamos 'Volatile' para asegurar que el valor sea siempre el más reciente entre hilos.
     @Volatile
     private var loggedInUserId: Long? = null
 
-    // Orquesta el login y guarda el ID del usuario si es exitoso
-    suspend fun login(identifier: String, password: String): Result<UserEntity> {
-        // Permitimos login con email o username
+    // --- 3. NUEVOS FLUJOS Y FUNCIONES PARA PREFERENCIAS ---
+
+    /**
+     * Flujo que emite el último identificador (usuario/email) guardado.
+     * El ViewModel lo observará para autocompletar el campo de texto.
+     */
+    val savedIdentifierFlow: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            // Lee el valor de la clave SAVED_IDENTIFIER. Si no existe, devuelve una cadena vacía.
+            preferences[PreferencesKeys.SAVED_IDENTIFIER] ?: ""
+        }
+
+    /**
+     * Guarda las preferencias de login en DataStore.
+     * Esta función se llamará desde la función `login` si las credenciales son correctas.
+     */
+    private suspend fun saveLoginPreferences(rememberMe: Boolean, identifier: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.REMEMBER_ME] = rememberMe
+            if (rememberMe) {
+                // Si el usuario quiere ser recordado, guardamos su identificador.
+                preferences[PreferencesKeys.SAVED_IDENTIFIER] = identifier
+            } else {
+                // Si desmarca la casilla, nos aseguramos de borrar el identificador guardado.
+                preferences.remove(PreferencesKeys.SAVED_IDENTIFIER)
+            }
+        }
+    }
+    // --------------------------------------------------------
+
+    // --- 4. FUNCIÓN `login` MODIFICADA ---
+    // Ahora recibe el estado del checkbox "Recordarme".
+    suspend fun login(identifier: String, password: String, rememberMe: Boolean): Result<UserEntity> {
         val user = userDao.getByEmailOrUsername(identifier)
         return if (user != null && user.password == password) {
-            // Guardamos el ID del usuario que ha iniciado sesión correctamente
             setLoggedInUserId(user.id)
+            saveLoginPreferences(rememberMe, identifier)
             Result.success(user)
         } else {
             Result.failure(IllegalArgumentException("Credenciales Inválidas"))
         }
     }
 
-    // --- CAMBIO 3: Nueva función para obtener el usuario logueado ---
     /**
-     * Obtiene los datos del usuario que ha iniciado sesión actualmente.
-     * Usa el ID guardado durante el login.
+     * Obtiene el usuario logueado y enriquece sus datos con el nombre del rol y la URL de la foto.
+     * Devuelve un modelo de dominio `UserProfile` listo para la UI.
      */
-    suspend fun getLoggedInUser(): UserEntity? {
+    suspend fun getLoggedInUser(): UserProfile? {
         return withContext(Dispatchers.IO) {
             loggedInUserId?.let { id ->
-                userDao.getUserById(id)
+                // Ahora toda la lógica compleja de JOINs está en la DAO
+                userDao.getUserProfileById(id)
             }
         }
     }
 
-    // --- CAMBIO 4: Nueva función para actualizar un usuario ---
-    /**
-     * Actualiza los datos de un usuario en la base de datos.
-     * Primero valida los campos antes de persistir.
-     */
     suspend fun updateUser(user: UserEntity): Result<Unit> {
-        // Validación de campos antes de guardar (reutilizando la lógica de ValidatorUsers)
         validateNameLettersOnly(user.name)?.let { return Result.failure(IllegalArgumentException(it)) }
         validateUsername(user.username)?.let { return Result.failure(IllegalArgumentException(it)) }
         validatePhoneDigitsOnly(user.phone)?.let { return Result.failure(IllegalArgumentException(it)) }
@@ -63,23 +107,30 @@ class UserRepository(
         return withContext(Dispatchers.IO) {
             try {
                 userDao.updateUser(user)
-                Result.success(Unit) // 'Unit' indica que la operación fue exitosa pero no devuelve un valor.
+                Result.success(Unit)
             } catch (e: Exception) {
                 Result.failure(e)
             }
         }
     }
 
-    // Funciones de ayuda para gestionar el estado de login
     fun setLoggedInUserId(userId: Long) {
         loggedInUserId = userId
     }
 
+    // --- 5. FUNCIÓN `clearLoggedInUser` MODIFICADA ---
+    // Al cerrar sesión, también borramos el identificador guardado si el usuario no quiere ser recordado.
     fun clearLoggedInUser() {
         loggedInUserId = null
+        // Lanzamos una corrutina para actualizar las preferencias en segundo plano.
+        // No borramos el identificador si "Recordarme" sigue activo.
+        CoroutineScope(Dispatchers.IO).launch {
+            val rememberMe = context.dataStore.data.map { it[PreferencesKeys.REMEMBER_ME] ?: false }.first()
+            if (!rememberMe) {
+                saveLoginPreferences(false, "")
+            }
+        }
     }
-
-    // El resto de las funciones (register, getFotoUrlById) permanecen mayormente igual
 
     suspend fun getFotoUrlById(fotoId: Long?): String? {
         if (fotoId == null) return null
@@ -99,7 +150,6 @@ class UserRepository(
         fotoUrl: String,
         rol_id: Long
     ): Result<Long> {
-        // Validación de correo existente
         if (userDao.getByEmail(email) != null) {
             return Result.failure(IllegalArgumentException("Correo ya registrado"))
         }
