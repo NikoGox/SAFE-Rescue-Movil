@@ -6,18 +6,22 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.path
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 // --- CAMBIO 1: Importar el BottomNavigationBar ---
 import com.movil.saferescue.ui.components.AppDrawer
 import com.movil.saferescue.ui.components.AppTopBar
 import com.movil.saferescue.ui.components.SRBottomNavigationBar
+import com.movil.saferescue.ui.screen.ChatScreenVm
 import com.movil.saferescue.ui.screen.HomeScreen
+import com.movil.saferescue.ui.screen.IncidentsScreen
 import com.movil.saferescue.ui.screen.LoginScreenVm
 import com.movil.saferescue.ui.screen.NotificationScreenVm
 import com.movil.saferescue.ui.screen.ProfileScreen
 import com.movil.saferescue.ui.screen.RegisterScreenVm
 import com.movil.saferescue.ui.viewmodel.AuthViewModelFactory
+import com.movil.saferescue.ui.viewmodel.IncidentsViewModelFactory
 import com.movil.saferescue.ui.viewmodel.NotificationViewModelFactory
 import com.movil.saferescue.ui.viewmodel.ProfileViewModelFactory
 import kotlinx.coroutines.launch
@@ -27,7 +31,8 @@ fun AppNavGraph(
     navController: NavHostController,
     authViewModelFactory: AuthViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory,
-    notificationViewModelFactory: NotificationViewModelFactory
+    notificationViewModelFactory: NotificationViewModelFactory,
+    incidentsViewModelFactory: IncidentsViewModelFactory
 ) {
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -38,7 +43,10 @@ fun AppNavGraph(
     val goRegister: () -> Unit = { navController.navigate(Route.Register.path) }
     val goProfile: () -> Unit = { navController.navigate(Route.Profile.path) }
     val goNotifications: () -> Unit = { navController.navigate(Route.Notification.path) }
+    val goIncidents: () -> Unit = { navController.navigate(Route.Incidente.path) }
     val onNavigateBack: () -> Unit = { navController.popBackStack() }
+    val goChat: () -> Unit = { navController.navigate(Route.Chat.path) }
+
 
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentNavBackStackEntry?.destination?.route
@@ -58,6 +66,7 @@ fun AppNavGraph(
             popUpTo(0)
         }
     }
+    val routesWithBottomBar = listOf(Route.Home.path, Route.Incidente.path, Route.Notification.path,Route.Chat.path)
 
     // Rutas que no deben mostrar ni TopBar ni BottomBar
     val routesWithoutBars = listOf(Route.Login.path, Route.Register.path)
@@ -73,7 +82,9 @@ fun AppNavGraph(
                 onGoLogin = goLogin,
                 onGoRegister = goRegister,
                 onLogout = onLogout,
-                onGoNotifications = goNotifications
+                onGoNotifications = goNotifications,
+                onGoIncidents = goIncidents,
+                onGoChat = goChat
             )
         }
     ) {
@@ -87,21 +98,24 @@ fun AppNavGraph(
                         onGoRegister = goRegister,
                         onLogout = onLogout ,
                         onGoNotifications = goNotifications
+
                     )
                 }
             },
             // --- CAMBIO 2: Añadir el BottomBar al Scaffold ---
             bottomBar = {
-                // Solo mostramos la barra de navegación si estamos en la ruta "Home"
-                if (currentRoute == Route.Home.path) {
+                if (currentRoute in routesWithBottomBar) {
                     SRBottomNavigationBar(
                         currentRoute = currentRoute,
                         onItemClick = { route ->
-                            // El clic solo funciona si el usuario está autenticado
                             if (isAuthenticated) {
                                 navController.navigate(route) {
-                                    // Evita apilar la misma pantalla múltiples veces
+                                    // Navega a Home y limpia el stack hasta el inicio
+                                    popUpTo(Route.Home.path) {
+                                        saveState = true
+                                    }
                                     launchSingleTop = true
+                                    restoreState = true
                                 }
                             }
                         }
@@ -111,7 +125,6 @@ fun AppNavGraph(
         ) { innerPadding ->
             NavHost(
                 navController = navController,
-                // Si el usuario ya está logueado, empieza en Home, sino en Login
                 startDestination = if (isAuthenticated) Route.Home.path else Route.Login.path,
                 modifier = Modifier.padding(innerPadding)
             ) {
@@ -146,9 +159,17 @@ fun AppNavGraph(
                         onNavigateBack = onNavigateBack
                     )
                 }
-                // Aquí irían las rutas de "Incidents" y "Chat" que definiste en el BottomBar
-                // composable("incidents_route") { ... }
-                // composable("chat_route") { ... }
+                composable(Route.Incidente.path) {
+                    IncidentsScreen(factory = incidentsViewModelFactory)
+                }
+
+                composable(Route.Chat.path) {
+                    ChatScreenVm(
+                        notificationViewModelFactory = notificationViewModelFactory,
+                        onNavigateBack = onNavigateBack
+                    )
+                }
+
             }
         }
     }

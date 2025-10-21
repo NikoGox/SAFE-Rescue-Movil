@@ -1,12 +1,12 @@
-package com.movil.saferescue.data.local.user
+package com.movil.saferescue.data.local.notification
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 
 @Dao
-interface TipoPerfilDao {
-    
+interface TipoMensajeDao {
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insertTipoPerfil(tipoPerfil: TipoPerfilEntity)
+    suspend fun insertTipoMensaje(tipoMensaje:TipoMensajeEntity)
 }

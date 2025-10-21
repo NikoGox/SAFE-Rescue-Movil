@@ -96,5 +96,11 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
 
+    // Añade la librería Coil para cargar imágenes desde una URL en Compose
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
+    implementation("org.mindrot:jbcrypt:0.4")
+
+
     //Importante despues sintonizar las librerias
 }

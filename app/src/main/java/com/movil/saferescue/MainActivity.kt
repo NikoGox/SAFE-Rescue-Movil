@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.navigation.compose.rememberNavController
 import com.movil.saferescue.data.local.database.AppDatabase
-// --- CAMBIO 1: Importamos el NotificationViewModelFactory ---
+import com.movil.saferescue.data.repository.IncidenteRepository
 import com.movil.saferescue.data.repository.NotificationRepository
 import com.movil.saferescue.data.repository.UserRepository
 import com.movil.saferescue.navigation.AppNavGraph
@@ -13,15 +13,13 @@ import com.movil.saferescue.ui.theme.SAFERescueTheme
 import com.movil.saferescue.ui.viewmodel.AuthViewModelFactory
 import com.movil.saferescue.ui.viewmodel.NotificationViewModelFactory
 import com.movil.saferescue.ui.viewmodel.ProfileViewModelFactory
-// Se eliminó 'kotlin.getValue' ya que no es necesario importarlo explícitamente
+import com.movil.saferescue.ui.viewmodel.IncidentsViewModelFactory
 
 class MainActivity : ComponentActivity() {
 
     // Instancia única de la base de datos
     private val db by lazy { AppDatabase.getInstance(applicationContext) }
 
-    // --- CAMBIO 2: Inicialización de Repositorios por separado ---
-    // Cada repositorio es su propia propiedad 'val' con su propio 'lazy' block.
     private val userRepository by lazy {
         UserRepository(
             userDao = db.userDao(),
@@ -31,17 +29,22 @@ class MainActivity : ComponentActivity() {
 
     private val notificationRepository by lazy {
         NotificationRepository(
-            notificationDao = db.notificationDao()
+            notificationDao = db.notificationDao(),
+            userDao = db.userDao()
         )
     }
 
-    // --- CAMBIO 3: Creación de las Factories con el repositorio correcto ---
-    // A cada Factory se le pasa el repositorio que necesita.
+    private val incidenteRepository by lazy {
+        IncidenteRepository(
+            incidenteDao = db.incidenteDao(),
+            fotoDao = db.fotoDao()
+        )
+    }
+
     private val authViewModelFactory by lazy { AuthViewModelFactory(userRepository) }
     private val profileViewModelFactory by lazy { ProfileViewModelFactory(userRepository) }
-
-    // --- CAMBIO 4: Creamos la nueva Factory para las Notificaciones ---
     private val notificationViewModelFactory by lazy { NotificationViewModelFactory(notificationRepository) }
+    private val incidenteViewModelFactory by lazy { IncidentsViewModelFactory(incidenteRepository) }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,7 +60,8 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     authViewModelFactory = authViewModelFactory,
                     profileViewModelFactory = profileViewModelFactory,
-                    notificationViewModelFactory = notificationViewModelFactory
+                    notificationViewModelFactory = notificationViewModelFactory,
+                    incidentsViewModelFactory = incidenteViewModelFactory
                 )
             }
         }

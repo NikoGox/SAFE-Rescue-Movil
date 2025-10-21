@@ -9,4 +9,8 @@ sealed class Route( //Clase sellada
     object Notification:Route("notification")
     object Profile:Route("profile")
 
+    object Incidente:Route("incidente")
+
+    object Chat:Route("chat")
+
 }

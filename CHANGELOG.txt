@@ -1,3 +1,21 @@
+❚❙❘ VERSIÓN 1.5
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se implementó README con breve descripcion del proyecto y cambios de la ultima versión.
+├─• Se crea la entidad, Dao, repositorio de Incidente
+├─• Se modifica el navgraph y los componentes para manejar los vínculos de incidente
+├─• Se crea screen de incidente
+├─• Se crea el ViewModel y factory de incidente
+├─• Se modifica la entidad, Dao, repositorio de Notificaciones
+├─• Se crea la entidad, Dao de tipo mensaje
+├─• Se modifica el navgraph y los componentes para manejar los vínculos de chat
+├─• Se crea screen de chat
+├─• Se corrigen errores de compliacion
+└─• Se modifica el ViewModel y factory de notificaciones para que incluya relaciones y se reutiliza para mensajes
+
+->>> Se deja pendiente el uso de foto Async
+->>> Corregir error que se cae al intentar mandar mensajes
+
+
 ❚❙❘ VERSIÓN 1.4
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se crea entidad y dao de notificaciones
@@ -6,12 +24,14 @@
 ├─• Se añaden el viewModel, el repositio y el factory para notificaciones
 ├─• Se modifica el NavGrpah
 ├─• Se añade a la pestaña de perfiles los mensajes de error al editar
+├─• Se corrigen los errores de la pestaña de perfiles
 └─• Se añade la barra inferior y se adapata el TopBar
+
 ->>> Falta crear pestaña de incidentes y chat, y toda la lógica de cada una
 ->>> Revisar problema al ejecutar
 ->>> Revisar problema al modificar los datos en el perfil, problema del verficacion del rut
 ->>> Verficar el problema de iniciar sesión con el nombre de usaurio
--x Se corrigen los errores de la pestaña de perfiles
+
 
 ❚❙❘ VERSIÓN 1.3
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
@@ -41,6 +61,7 @@
 ├─• Se realizan modificaciones en los colores
 ├─• Se agrega una sealed class para las rutas
 └─• Se agregan las dependencias para la navegación
+
 
 ❚❙❘ VERSIÓN 1.1
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺

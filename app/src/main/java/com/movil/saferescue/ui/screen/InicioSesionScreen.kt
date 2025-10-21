@@ -67,7 +67,7 @@ fun LoginScreenVm(
         identifier = state.identifier,
         pass = state.pass,
         identifierError = state.identifierError,
-        passError = state.passError, // <-- 2. PASAMOS EL passError DESDE EL ESTADO
+        passError = state.passError,
         canSubmit = state.canSubmit,
         isSubmitting = state.isSubmitting,
         errorMsg = state.errorMsg,
@@ -116,7 +116,7 @@ private fun LoginScreen(
 
         // 1. Logo
         Image(
-            painter = painterResource(id = R.drawable.sr_logo), // Reemplaza con tu logo
+            painter = painterResource(id = R.drawable.sr_logo),
             contentDescription = "Logo",
             modifier = Modifier.size(150.dp)
         )

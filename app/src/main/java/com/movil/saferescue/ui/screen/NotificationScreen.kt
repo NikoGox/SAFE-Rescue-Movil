@@ -1,16 +1,9 @@
 package com.movil.saferescue.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -20,8 +13,6 @@ import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,12 +34,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movil.saferescue.data.local.notification.NotificationEntity
+import com.movil.saferescue.ui.components.InfoRowItem
 import com.movil.saferescue.ui.viewmodel.NotificationUiState
 import com.movil.saferescue.ui.viewmodel.NotificationViewModel
 import com.movil.saferescue.ui.viewmodel.NotificationViewModelFactory
@@ -97,7 +88,6 @@ private fun NotificationScreen(
                 title = { Text("Notificaciones") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        // Icono actualizado para usar la versión "automirrored"
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
@@ -146,6 +136,7 @@ private fun NotificationScreen(
                     )
                 }
                 else -> {
+                    // El NotificationList ahora es mucho más limpio.
                     NotificationList(
                         notifications = uiState.notifications,
                         onDismiss = onDismissNotification
@@ -156,17 +147,11 @@ private fun NotificationScreen(
             val snackbarHostState = remember { SnackbarHostState() }
             LaunchedEffect(uiState.errorMsg) {
                 uiState.errorMsg?.let {
-                    snackbarHostState.showSnackbar(
-                        message = it,
-                        actionLabel = "OK"
-                    )
+                    snackbarHostState.showSnackbar(message = it, actionLabel = "OK")
                     onClearError()
                 }
             }
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
+            SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
         }
     }
 
@@ -195,7 +180,8 @@ private fun NotificationScreen(
     }
 }
 
-// --- CAMBIOS PRINCIPALES A PARTIR DE AQUÍ ---
+
+// --- CAMBIO PRINCIPAL: SE SIMPLIFICA USANDO EL COMPONENTE REUTILIZABLE ---
 
 @Composable
 private fun NotificationList(
@@ -210,75 +196,18 @@ private fun NotificationList(
             items = notifications,
             key = { notification -> notification.id }
         ) { notification ->
-            // Ya no hay SwipeToDismissBox. Llamamos directamente a NotificationItem.
-            NotificationItem(
-                notification = notification,
-                onDeleteClick = { onDismiss(notification) } // Pasamos la acción de borrado
+            // ¡AQUÍ ESTÁ LA MAGIA!
+            // Usamos el nuevo Composable, pasándole los datos correspondientes.
+            InfoRowItem(
+                title = notification.titulo,
+                subtitle = notification.mensaje,
+                timestamp = formatDate(notification.fechaSubida),
+                isUnread = !notification.isRead,
+                onDeleteClick = { onDismiss(notification) }
             )
         }
     }
 }
 
-@Composable
-private fun NotificationItem(
-    notification: NotificationEntity,
-    onDeleteClick: () -> Unit // Nuevo parámetro para manejar el clic en el botón de eliminar
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp, horizontal = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 16.dp), // Ajuste de padding
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (!notification.isRead) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primary,
-                            shape = MaterialTheme.shapes.small
-                        )
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = if (notification.isRead) 0.dp else 16.dp)
-            ) {
-                Text(
-                    text = notification.titulo,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = if (notification.isRead) FontWeight.Normal else FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = notification.mensaje,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = formatDate(notification.fechaSubida),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-
-            // Botón de eliminar (papelera) añadido al final del Row
-            IconButton(onClick = onDeleteClick) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Eliminar notificación",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-            }
-        }
-    }
-}
+// El Composable "NotificationItem" anterior ya no es necesario y ha sido eliminado.
+// Toda su lógica ahora vive en el archivo "InfoRowItem.kt".

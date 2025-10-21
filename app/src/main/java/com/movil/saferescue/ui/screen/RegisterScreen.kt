@@ -191,7 +191,7 @@ private fun RegisterScreen(
         Spacer(Modifier.height(8.dp))
 
         // URL de la Foto
-        OutlinedTextField(value = fotoUrl, onValueChange = onFotoUrlChange, modifier = Modifier.fillMaxWidth(), label = { Text("URL de la Foto de Perfil") }, leadingIcon = { Icon(Icons.Default.Link, null) }, isError = fotoUrlError != null, singleLine = true)
+        OutlinedTextField(value = fotoUrl, onValueChange = onFotoUrlChange, modifier = Modifier.fillMaxWidth(), label = { Text("URL de la Foto de Perfil (opcional)") }, leadingIcon = { Icon(Icons.Default.Link, null) }, isError = fotoUrlError != null, singleLine = true)
         if (fotoUrlError != null) { Text(fotoUrlError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth()) }
         Spacer(Modifier.height(8.dp))
 

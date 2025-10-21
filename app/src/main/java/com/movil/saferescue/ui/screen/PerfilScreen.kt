@@ -69,7 +69,7 @@ fun ProfileScreen(
         // Imagen de Perfil
         Image(
             painter = painterResource(id = R.drawable.sr_logo), // Reemplazar con coil/glide para state.fotoUrl
-            contentDescription = "Foto de Perfil",
+            contentDescription = "Foto de Perfil (opcional)",
             modifier = Modifier
                 .size(120.dp)
                 .clip(CircleShape),

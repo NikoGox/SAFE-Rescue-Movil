@@ -1,5 +1,6 @@
 package com.movil.saferescue.ui.components
 
+import android.net.http.SslCertificate.saveState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MailOutline
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.text.TextStyle
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.movil.saferescue.ui.theme.SRPrimaryBlue
 
 
@@ -29,9 +31,9 @@ data class BottomNavItem(
 )
 
 val navItems = listOf(
-    BottomNavItem("Incidentes", Icons.Filled.Warning, "incidents_route"),
+    BottomNavItem("Incidentes", Icons.Filled.Warning, Route.Incidente.path),
     BottomNavItem("Inicio", Icons.Filled.Home, Route.Home.path),
-    BottomNavItem("Chat", Icons.Filled.MailOutline, "chat_route")
+    BottomNavItem("Chat", Icons.Filled.MailOutline, Route.Chat.path)
 )
 
 @Composable
@@ -60,7 +62,7 @@ fun SRBottomNavigationBar(
                 },
                 label = {
                     Text(
-                        // 🟢 CORRECCIÓN CLAVE: Usamos el parámetro fontSize dentro de Text
+
                         text = item.title,
                         fontSize = TEXT_FONT_SIZE
                     )

@@ -10,7 +10,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SAFERescue" >
+        android:theme="@style/Theme.SAFERescue"
+        tools:ignore="MissingClass">
         <activity
             android:name=".MainActivity"
             android:exported="true"

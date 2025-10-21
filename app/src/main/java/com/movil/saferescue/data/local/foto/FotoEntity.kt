@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "fotos",
-    indices = [Index(value = ["url"], unique = true)] // Índice único para evitar URLs duplicadas
+    indices = [Index(value = ["url"], unique = true)]
 )
 data class FotoEntity(
     @PrimaryKey(autoGenerate = true)

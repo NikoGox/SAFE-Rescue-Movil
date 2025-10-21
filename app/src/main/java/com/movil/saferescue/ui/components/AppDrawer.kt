@@ -14,9 +14,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.movil.saferescue.R // Asegúrate de tener tu logo
 
-// La data class DrawerItem y la función defaultDrawerItems no se usan en este
-// Composable, pero las dejamos por si las necesitas en el futuro.
-// Su definición está correcta.
 data class DrawerItem(
     val label: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -33,7 +30,9 @@ fun AppDrawer(
     onGoLogin: () -> Unit,
     onGoRegister: () -> Unit,
     onGoNotifications: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onGoChat: () -> Unit,
+    onGoIncidents: () -> Unit
 ) {
     ModalDrawerSheet {
         // Encabezado (sin cambios, ya estaba bien)
@@ -77,6 +76,27 @@ fun AppDrawer(
         // 2. Elementos condicionales corregidos
         if (isAuthenticated) {
             // Usuario autenticado
+
+            NavigationDrawerItem(
+                icon = { Icon(imageVector = Icons.Default.Report, contentDescription = "Incidentes") },
+                label = { Text("Incidentes") },
+                selected = false,
+                onClick = {
+                    onGoIncidents()
+                    onCloseDrawer()
+                }
+            )
+
+            NavigationDrawerItem(
+                icon = { Icon(imageVector = Icons.Default.Chat, contentDescription = "Chat") },
+                label = { Text("Chat") },
+                selected = false,
+                onClick = {
+                    onGoChat()
+                    onCloseDrawer()
+                }
+            )
+
             NavigationDrawerItem(
                 icon = { Icon(Icons.Default.AccountCircle, contentDescription = "Mi Perfil") },
                 label = { Text("Mi Perfil") },
@@ -95,6 +115,7 @@ fun AppDrawer(
                     onCloseDrawer()
                 }
             )
+
             Divider(modifier = Modifier.padding(vertical = 8.dp)) // Mejor separación visual
             NavigationDrawerItem(
                 icon = { Icon(Icons.Default.Logout, contentDescription = "Cerrar Sesión") },
