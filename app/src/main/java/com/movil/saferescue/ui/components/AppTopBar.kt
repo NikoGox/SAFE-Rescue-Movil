@@ -3,34 +3,24 @@ package com.movil.saferescue.ui.components
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Login
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.movil.saferescue.navigation.Route // <<< CORRECCIÓN: Importa tus rutas
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTopBar(
     isAuthenticated: Boolean,
     onOpenDrawer: () -> Unit,
-    onGoLogin: () -> Unit,
-    onGoRegister: () -> Unit,
-    onGoNotifications: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    // <<< CORRECCIÓN 1: Se reemplazan múltiples funciones por una sola >>>
+    onNavigate: (route: String) -> Unit
 ) {
-    var showMenu by remember { mutableStateOf(false) }
     val iconSize = 28.dp
 
     CenterAlignedTopAppBar(
@@ -60,26 +50,28 @@ fun AppTopBar(
             }
         },
         actions = {
-
+            // <<< CORRECCIÓN 2: La lógica se simplifica >>>
             if (isAuthenticated) {
                 // Usuario autenticado
-                IconButton(onClick = onGoNotifications) {
+                IconButton(onClick = { onNavigate(Route.Notification.path) }) {
                     Icon(
                         imageVector = Icons.Filled.Notifications,
                         contentDescription = "Notificaciones",
-                        modifier = Modifier.size(38.dp)
+                        modifier = Modifier.size(38.dp) // Un tamaño mayor para notificaciones está bien
                     )
                 }
+                // Aquí podrías agregar un menú desplegable con más opciones, como el logout
+                // IconButton(onClick = onLogout) { ... }
             } else {
-
-                IconButton(onClick = onGoLogin) {
+                // Usuario no autenticado
+                IconButton(onClick = { onNavigate(Route.Login.path) }) {
                     Icon(
                         Icons.Filled.Login,
                         contentDescription = "Login",
                         modifier = Modifier.size(iconSize)
                     )
                 }
-                IconButton(onClick = onGoRegister) {
+                IconButton(onClick = { onNavigate(Route.Register.path) }) {
                     Icon(
                         Icons.Filled.PersonAdd,
                         contentDescription = "Registro",
@@ -87,7 +79,6 @@ fun AppTopBar(
                     )
                 }
             }
-
         }
     )
 }

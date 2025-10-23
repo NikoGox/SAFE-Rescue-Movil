@@ -1,7 +1,19 @@
+// Archivo: app/src/main/java/com/movil/saferescue/data/local/incidente/IncidenteDao.kt
 package com.movil.saferescue.data.local.incidente
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
+
+// <<< INICIO DE LA CORRECCIÓN >>>
+// Se mueve la data class fuera y por encima de la interfaz.
+// Ahora es una clase de nivel superior en este archivo.
+data class IncidentWithDetails(
+    @Embedded val incident: IncidenteEntity,
+    @ColumnInfo(name = "photo_url") val photoUrl: String?,
+    @ColumnInfo(name = "asignado_a_nombre") val asignadoANombre: String? // Nombre del usuario
+)
+// <<< FIN DE LA CORRECCIÓN >>>
+
 
 /**
  * Data Access Object (DAO) para la entidad Incidente.
@@ -12,55 +24,52 @@ interface IncidenteDao {
 
     /**
      * Inserta un nuevo incidente en la base de datos.
-     * Si el incidente ya existe, la operación se cancela gracias a OnConflictStrategy.ABORT.
-     * Es una función 'suspend' porque debe ser llamada desde una corrutina.
+     * Si hay un conflicto, se reemplaza la entrada existente.
      *
      * @param incidente El objeto IncidenteEntity a insertar.
-     * @return El ID del nuevo incidente insertado.
+     * @return El ID del nuevo incidente insertado o actualizado.
      */
-    @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insertIncidente(incidente: IncidenteEntity): Long
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertar(incidente: IncidenteEntity): Long
 
     /**
      * Actualiza un incidente existente en la base de datos.
-     * Room utiliza la clave primaria (id) del objeto para encontrar la fila a actualizar.
-     *
-     * @param incidente El objeto IncidenteEntity con los datos actualizados.
      */
     @Update
     suspend fun updateIncidente(incidente: IncidenteEntity)
 
     /**
      * Elimina un incidente de la base de datos.
-     * Room utiliza la clave primaria (id) para encontrar y eliminar la fila.
-     *
-     * @param incidente El objeto IncidenteEntity a eliminar.
      */
     @Delete
     suspend fun deleteIncidente(incidente: IncidenteEntity)
 
     /**
      * Obtiene un incidente específico por su ID.
-     * Devuelve un Flow, lo que permite a la UI observar cambios en este incidente en tiempo real.
-     *
-     * @param id El ID del incidente a buscar.
-     * @return Un Flow que emite el IncidenteEntity o null si no se encuentra.
      */
     @Query("SELECT * FROM incidente WHERE id = :id")
     fun getIncidenteById(id: Long): Flow<IncidenteEntity?>
 
     /**
-     * Obtiene todos los incidentes de la base de datos, ordenados por fecha de registro descendente.
-     * Devuelve un Flow<List<IncidenteEntity>>, lo que permite a la UI actualizarse
-     * automáticamente cuando se añadan, modifiquen o eliminen incidentes.
-     *
-     * @return Un Flow que emite la lista completa de todos los incidentes.
+     * Inserta una lista de incidentes. Útil para la inicialización de la base de datos.
      */
-    @Query("SELECT * FROM incidente ORDER BY fechaRegistro DESC")
-    fun getAllIncidentes(): Flow<List<IncidenteEntity>>
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(incidentes: List<IncidenteEntity>)
 
-
+    /**
+     * Obtiene una lista de todos los incidentes con detalles adicionales (foto y nombre del asignado).
+     * Esta es la consulta principal para mostrar la lista de incidentes en la UI.
+     */
+    @Transaction
+    @Query("""
+        SELECT 
+            i.*, 
+            f.url AS photo_url,
+            u.name AS asignado_a_nombre
+        FROM incidente AS i
+        LEFT JOIN fotos AS f ON i.foto_id = f.id
+        LEFT JOIN users AS u ON i.asignado_a_user_id = u.id
+        ORDER BY i.fechaRegistro DESC
+    """)
+    fun getAllIncidentsWithDetails(): Flow<List<IncidentWithDetails>>
 }

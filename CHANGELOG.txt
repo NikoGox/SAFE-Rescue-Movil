@@ -1,12 +1,29 @@
+❚❙❘ VERSIÓN 1.5.2
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se añade la lógica para implementación de API nativa de la cámara.
+├─• Se refactoriza el nombre de NotificacionesEntity y sus derivados a MensajeEntity.
+├─• Se separa las preferencias de usuario separándolas de el repositorio.
+├─• Se modifica la pestaña de incidentes.
+├─• Se agrega integración con API Nativa de camara para tomar fotos al modificar los incidentes.
+├─• Se agregaron botones para modificar el incidente y sacar foto.
+├─• Se separa parte de la logica del MainActivity.kt a SafeRescueApplication.kt para precargar la base de datos.
+└─• Corrigió implementación de la base de datos para que cargue los datos de inicio de sesión inmediatamente al abrir la app. (Temporal)
+
+->>> Terminar de desarrollar la función de Incidentes.
+->>> Agregar logica para que se mantenga la sesión iniciada al cerrar la app.
+->>> Arreglar los colores en general.
+->>> Terminar función de cerrar incidente que esta en el repositorio de incidente comentado.
+
 ❚❙❘ VERSIÓN 1.5.1
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se corrigen errores de databases, modificando lógica y agregando un insertAll en cada Dao
 ├─• Se cambian las fotos default de perfil e incidente
 ├─• Se modifica la lógica de user entity, dao y repository para poder recibir correctamente la foto y el tipo de usuario
-├─• Se agregala función que permite recordar el ultimo usuario ingresado con el checkbox recuerdame
+├─• Se agrega la función que permite recordar el ultimo usuario ingresado con el checkbox recuerdame
 ├─• Se soluciona problema de caída en mensajes
 ├─• Cambio de lógica de AuthViewModel permitiendo que reciba el contexto además del repositorio
 └─• Se agrega la versión en pantalla de inicio de sesión
+
 ->>> Agregar una función que permita cambiar la fotografía del usuario
 ->>> Agregar función de redirección para recuperar contraseña
 

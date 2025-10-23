@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Permite compartir archivos desde el directorio de caché de la app -->
+    <cache-path
+        name="fotos-de-camara"
+        path="." />
+</paths>

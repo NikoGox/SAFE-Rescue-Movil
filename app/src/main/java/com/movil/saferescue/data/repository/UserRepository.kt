@@ -1,109 +1,91 @@
 package com.movil.saferescue.data.repository
 
-import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import com.movil.saferescue.data.local.foto.FotoDao
 import com.movil.saferescue.data.local.foto.FotoEntity
+import com.movil.saferescue.data.local.storage.UserPreferences
 import com.movil.saferescue.data.local.user.UserDao
 import com.movil.saferescue.data.local.user.UserEntity
 import com.movil.saferescue.data.local.user.UserProfile
 import com.movil.saferescue.domain.validation.*
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
+import org.mindrot.jbcrypt.BCrypt
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-// --- 1. LÓGICA DE DATASTORE AÑADIDA ---
-// Se crea una extensión de Context para tener una única instancia de DataStore en toda la app.
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
-
-// Se definen las claves para acceder a los datos guardados. Es como el nombre de una columna.
-private object PreferencesKeys {
-    val REMEMBER_ME = booleanPreferencesKey("remember_me_status")
-    val SAVED_IDENTIFIER = stringPreferencesKey("saved_user_identifier")
-}
-// ------------------------------------
-
-// --- 2. CONSTRUCTOR ACTUALIZADO ---
-// Ahora necesita el `Context` para poder inicializar y usar DataStore.
+/**
+ * Repositorio para manejar los datos de los usuarios.
+ * Delega la lógica de DataStore a `UserPreferences`.
+ *
+ * @param userDao DAO para operaciones de usuario en la base de datos.
+ * @param fotoDao DAO para operaciones de fotos.
+ * @param userPreferences Clase que gestiona las preferencias del usuario en DataStore.
+ */
 class UserRepository(
     private val userDao: UserDao,
     private val fotoDao: FotoDao,
-    private val context: Context // Se añade el contexto
+    private val userPreferences: UserPreferences
 ) {
-    @Volatile
-    private var loggedInUserId: Long? = null
+    private val _loggedInUserId = MutableStateFlow<Long?>(null)
 
-    // --- 3. NUEVOS FLUJOS Y FUNCIONES PARA PREFERENCIAS ---
+    val loggedInUserId: StateFlow<Long?> = _loggedInUserId.asStateFlow()
 
-    /**
-     * Flujo que emite el último identificador (usuario/email) guardado.
-     * El ViewModel lo observará para autocompletar el campo de texto.
-     */
-    val savedIdentifierFlow: Flow<String> = context.dataStore.data
-        .map { preferences ->
-            // Lee el valor de la clave SAVED_IDENTIFIER. Si no existe, devuelve una cadena vacía.
-            preferences[PreferencesKeys.SAVED_IDENTIFIER] ?: ""
-        }
+    val savedIdentifierFlow: Flow<String?> = userPreferences.savedIdentifierFlow
 
-    /**
-     * Guarda las preferencias de login en DataStore.
-     * Esta función se llamará desde la función `login` si las credenciales son correctas.
-     */
-    private suspend fun saveLoginPreferences(rememberMe: Boolean, identifier: String) {
-        context.dataStore.edit { preferences ->
-            preferences[PreferencesKeys.REMEMBER_ME] = rememberMe
-            if (rememberMe) {
-                // Si el usuario quiere ser recordado, guardamos su identificador.
-                preferences[PreferencesKeys.SAVED_IDENTIFIER] = identifier
-            } else {
-                // Si desmarca la casilla, nos aseguramos de borrar el identificador guardado.
-                preferences.remove(PreferencesKeys.SAVED_IDENTIFIER)
-            }
-        }
-    }
-    // --------------------------------------------------------
-
-    // --- 4. FUNCIÓN `login` MODIFICADA ---
-    // Ahora recibe el estado del checkbox "Recordarme".
-    suspend fun login(identifier: String, password: String, rememberMe: Boolean): Result<UserEntity> {
-        val user = userDao.getByEmailOrUsername(identifier)
-        return if (user != null && user.password == password) {
-            setLoggedInUserId(user.id)
-            saveLoginPreferences(rememberMe, identifier)
-            Result.success(user)
-        } else {
-            Result.failure(IllegalArgumentException("Credenciales Inválidas"))
-        }
-    }
-
-    /**
-     * Obtiene el usuario logueado y enriquece sus datos con el nombre del rol y la URL de la foto.
-     * Devuelve un modelo de dominio `UserProfile` listo para la UI.
-     */
-    suspend fun getLoggedInUser(): UserProfile? {
+    suspend fun login(identifier: String, pass: String, rememberMe: Boolean): Result<UserEntity> {
         return withContext(Dispatchers.IO) {
-            loggedInUserId?.let { id ->
-                // Ahora toda la lógica compleja de JOINs está en la DAO
-                userDao.getUserProfileById(id)
+            val user = userDao.getByEmailOrUsername(identifier)
+            if (user != null && BCrypt.checkpw(pass, user.password)) {
+                _loggedInUserId.value = user.id
+
+                if (rememberMe) {
+                    userPreferences.saveUserIdentifier(identifier)
+                } else {
+                    userPreferences.clearUserIdentifier()
+                }
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Credenciales inválidas"))
             }
+        }
+    }
+
+    suspend fun tryLoginFromPreferences(): Result<UserEntity?> {
+        val savedIdentifier = userPreferences.savedIdentifierFlow.firstOrNull()
+            ?: return Result.success(null)
+
+        return withContext(Dispatchers.IO) {
+            val user = userDao.getByEmailOrUsername(savedIdentifier)
+            if (user != null) {
+                _loggedInUserId.value = user.id
+                Result.success(user)
+            } else {
+                userPreferences.clearUserIdentifier()
+                Result.failure(Exception("Usuario guardado no encontrado en la base de datos."))
+            }
+        }
+    }
+
+    suspend fun clearLoggedInUser() {
+        _loggedInUserId.value = null
+        userPreferences.clearUserIdentifier()
+    }
+
+    suspend fun getLoggedInUser(): UserProfile? {
+        val currentUserId = _loggedInUserId.value ?: return null
+        return withContext(Dispatchers.IO) {
+            userDao.getUserProfileById(currentUserId)
         }
     }
 
     suspend fun updateUser(user: UserEntity): Result<Unit> {
-        validateNameLettersOnly(user.name)?.let { return Result.failure(IllegalArgumentException(it)) }
-        validateUsername(user.username)?.let { return Result.failure(IllegalArgumentException(it)) }
-        validatePhoneDigitsOnly(user.phone)?.let { return Result.failure(IllegalArgumentException(it)) }
-        validateChileanRUN(user.run, user.dv)?.let { return Result.failure(IllegalArgumentException(it)) }
-
+        // La validación se hace en el ViewModel, aquí solo se actualiza.
         return withContext(Dispatchers.IO) {
             try {
                 userDao.updateUser(user)
@@ -114,30 +96,30 @@ class UserRepository(
         }
     }
 
-    fun setLoggedInUserId(userId: Long) {
-        loggedInUserId = userId
-    }
-
-    // --- 5. FUNCIÓN `clearLoggedInUser` MODIFICADA ---
-    // Al cerrar sesión, también borramos el identificador guardado si el usuario no quiere ser recordado.
-    fun clearLoggedInUser() {
-        loggedInUserId = null
-        // Lanzamos una corrutina para actualizar las preferencias en segundo plano.
-        // No borramos el identificador si "Recordarme" sigue activo.
-        CoroutineScope(Dispatchers.IO).launch {
-            val rememberMe = context.dataStore.data.map { it[PreferencesKeys.REMEMBER_ME] ?: false }.first()
-            if (!rememberMe) {
-                saveLoginPreferences(false, "")
+    // <<< FUNCIÓN NUEVA: Para actualizar solo el ID de la foto del usuario >>>
+    /**
+     * Actualiza el 'foto_id' de un usuario específico.
+     * Esta función es llamada desde el ViewModel después de guardar una nueva imagen.
+     */
+    suspend fun updateUserPhoto(userId: Long, newPhotoId: Long): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                userDao.updateUserPhotoId(userId, newPhotoId)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
             }
         }
     }
 
-    suspend fun getFotoUrlById(fotoId: Long?): String? {
-        if (fotoId == null) return null
-        return withContext(Dispatchers.IO) {
-            fotoDao.findFotoById(fotoId)?.url
-        }
+
+    fun setLoggedInUserId(userId: Long) {
+        _loggedInUserId.value = userId
     }
+
+    // <<< CÓDIGO OBSOLETO ELIMINADO >>>
+    // La función 'getFotoUrlById' ya no es necesaria, ya que 'getLoggedInUser' devuelve
+    // un 'UserProfile' que ya contiene la URL de la foto.
 
     suspend fun register(
         name: String,
@@ -147,39 +129,50 @@ class UserRepository(
         run: String,
         dv: String,
         username: String,
-        fotoUrl: String,
+        fotoUrl: String, // La URL de la foto de perfil por defecto
         rol_id: Long
     ): Result<Long> {
-        if (userDao.getByEmail(email) != null) {
-            return Result.failure(IllegalArgumentException("Correo ya registrado"))
-        }
-        if (userDao.getByUsername(username) != null) {
-            return Result.failure(IllegalArgumentException("Nombre de usuario ya en uso"))
-        }
+        return withContext(Dispatchers.IO) {
+            if (userDao.getByEmail(email) != null) {
+                return@withContext Result.failure(IllegalArgumentException("Correo ya registrado"))
+            }
+            if (userDao.getByUsername(username) != null) {
+                return@withContext Result.failure(IllegalArgumentException("Nombre de usuario ya en uso"))
+            }
 
-        val fotoExistente = fotoDao.getByUrl(fotoUrl)
-        val fotoId: Long
+            // <<< LÓGICA CORREGIDA: Se adapta a la nueva entidad FotoEntity >>>
+            val fotoExistente = fotoDao.getByUrl(fotoUrl)
+            val fotoId: Long
 
-        if (fotoExistente != null) {
-            fotoId = fotoExistente.id
-        } else {
-            fotoId = fotoDao.insert(FotoEntity(url = fotoUrl, fechaSubida = System.currentTimeMillis()))
-        }
+            if (fotoExistente != null) {
+                fotoId = fotoExistente.id
+            } else {
+                // Si la foto por defecto no existe, la creamos con el nuevo formato
+                val fileName = "DEFAULT_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())}.jpg"
+                fotoId = fotoDao.insertFoto(
+                    FotoEntity(
+                        nombre = fileName,
+                        url = fotoUrl
+                    )
+                )
+            }
 
-        val nuevoUsuarioId = userDao.insertUsuario(
-            UserEntity(
-                name = name,
-                email = email,
-                phone = phone,
-                password = pass,
-                run = run,
-                dv = dv,
-                username = username,
-                foto_id = fotoId,
-                rol_id = rol_id
+            val hashedPassword = BCrypt.hashpw(pass, BCrypt.gensalt())
+            val nuevoUsuarioId = userDao.insertUsuario(
+                UserEntity(
+                    name = name,
+                    email = email,
+                    phone = phone,
+                    password = hashedPassword,
+                    run = run,
+                    dv = dv,
+                    username = username,
+                    foto_id = fotoId,
+                    rol_id = rol_id
+                )
             )
-        )
 
-        return Result.success(nuevoUsuarioId)
+            Result.success(nuevoUsuarioId)
+        }
     }
 }

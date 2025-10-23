@@ -12,18 +12,20 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 1.5.1
+### ❚❙❘ VERSIÓN 1.5.2
 
-> <br>• Se corrigen errores de databases, modificando lógica y agregando un insertAll en cada Dao
-> <br>• Se cambian las fotos default de perfil e incidente
-> <br>• Se modifica la lógica de user entity, dao y repository para poder recibir correctamente la foto y el tipo de usuario
-> <br>• Se agregala función que permite recordar el ultimo usuario ingresado con el checkbox recuerdame
-> <br>• Se soluciona problema de caída en mensajes
-> <br>• Cambio de lógica de AuthViewModel permitiendo que reciba el contexto además del repositorio
-> <br>• Se agrega la versión en pantalla de inicio de sesión
-> <br> >>> Agregar una función que permita cambiar la fotografía del usuario
-> <br> >>> Agregar función de redirección para recuperar contraseña
-> <br> 
+> <br>• Se añade la lógica para implementación de API nativa de la cámara.
+> <br>• Se refactoriza el nombre de NotificacionesEntity y sus derivados a MensajeEntity.
+> <br>• Se separa las preferencias de usuario separándolas de el repositorio.
+> <br>• Se modifica la pestaña de incidentes.
+> <br>• Se agrega integración con API Nativa de camara para tomar fotos al modificar los incidentes.
+> <br>• Se separa parte de la logica del MainActivity.kt a SafeRescueApplication.kt para precargar la base de datos.
+> <br>• Se corrigió implementación de la base de datos para que cargue los datos de inicio de sesión inmediatamente al abrir la app. (Temporal)
+> <br> > > > Terminar de desarrollar la función de Incidentes.
+> <br> > > > Agregar logica para que se mantenga la sesión iniciada al cerrar la app.
+> <br> > > > Arreglar los colores en general.
+> <br> > > > Terminar función de cerrar incidente que esta en el repositorio de incidente comentado.
+
 
 ---
 

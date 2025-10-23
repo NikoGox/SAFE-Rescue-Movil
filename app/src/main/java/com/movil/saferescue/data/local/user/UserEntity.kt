@@ -35,7 +35,7 @@ data class UserEntity(
     val phone: String,
     val password: String,
     @ColumnInfo(name = "foto_id", index = true)
-    var foto_id: Long,
+    var foto_id: Long?,
 
     @ColumnInfo(name = "rol_id", index = true)
     var rol_id: Long

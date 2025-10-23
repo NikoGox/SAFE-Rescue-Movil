@@ -38,11 +38,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.movil.saferescue.data.local.notification.NotificationEntity
+// 1. IMPORTACIONES ACTUALIZADAS
+import com.movil.saferescue.data.local.mensaje.MensajeEntity
 import com.movil.saferescue.ui.components.InfoRowItem
-import com.movil.saferescue.ui.viewmodel.NotificationUiState
-import com.movil.saferescue.ui.viewmodel.NotificationViewModel
-import com.movil.saferescue.ui.viewmodel.NotificationViewModelFactory
+import com.movil.saferescue.ui.viewmodel.AlertasUiState
+import com.movil.saferescue.ui.viewmodel.MensajeViewModel
+import com.movil.saferescue.ui.viewmodel.MensajeViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -54,30 +55,36 @@ private fun formatDate(timestamp: Long): String {
 
 @Composable
 fun NotificationScreenVm(
-    notificationViewModelFactory: NotificationViewModelFactory,
+    // 2. EL FACTORY AHORA ES MensajeViewModelFactory
+    mensajeViewModelFactory: MensajeViewModelFactory,
     onNavigateBack: () -> Unit
 ) {
-    val viewModel: NotificationViewModel = viewModel(factory = notificationViewModelFactory)
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // 3. SE CREA UNA INSTANCIA DEL NUEVO MensajeViewModel
+    val viewModel: MensajeViewModel = viewModel(factory = mensajeViewModelFactory)
+    // 4. SE CONSUME EL NUEVO ESTADO AlertasUiState
+    val uiState by viewModel.alertasUiState.collectAsStateWithLifecycle()
 
     NotificationScreen(
         uiState = uiState,
         onNavigateBack = onNavigateBack,
-        onMarkAllAsRead = viewModel::markAllAsRead,
-        onDeleteAll = viewModel::deleteAllNotifications,
-        onDismissNotification = { notification -> viewModel.deleteNotification(notification.id) },
-        onClearError = viewModel::clearError
+        // 5. SE ENLAZAN LAS ACCIONES A LOS NUEVOS MÉTODOS DEL VIEWMODEL
+        onMarkAllAsRead = viewModel::marcarAlertasComoLeidas,
+        onDeleteAll = viewModel::eliminarAlertas,
+        onDismissNotification = { mensaje -> viewModel.eliminarMensaje(mensaje.id) },
+        onClearError = viewModel::limpiarError
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NotificationScreen(
-    uiState: NotificationUiState,
+    // 6. El ESTADO AHORA ES DE TIPO AlertasUiState
+    uiState: AlertasUiState,
     onNavigateBack: () -> Unit,
     onMarkAllAsRead: () -> Unit,
     onDeleteAll: () -> Unit,
-    onDismissNotification: (NotificationEntity) -> Unit,
+    // La acción de descarte ahora recibe una MensajeEntity
+    onDismissNotification: (MensajeEntity) -> Unit,
     onClearError: () -> Unit
 ) {
     var showDeleteAllDialog by remember { mutableStateOf(false) }
@@ -85,14 +92,15 @@ private fun NotificationScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notificaciones") },
+                title = { Text("Alertas del Sistema") }, // Título actualizado para claridad
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 },
                 actions = {
-                    if (uiState.unreadCount > 0) {
+                    // 7. LA LÓGICA DE LA UI USA LOS NOMBRES DEL NUEVO ESTADO
+                    if (uiState.contadorNoLeidas > 0) { // Antes: uiState.unreadCount
                         TooltipBox(
                             positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
                             tooltip = { Text("Marcar todas como leídas") },
@@ -103,7 +111,7 @@ private fun NotificationScreen(
                             }
                         }
                     }
-                    if (uiState.notifications.isNotEmpty()) {
+                    if (uiState.alertas.isNotEmpty()) { // Antes: uiState.notifications
                         TooltipBox(
                             positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
                             tooltip = { Text("Eliminar todas") },
@@ -127,18 +135,17 @@ private fun NotificationScreen(
                 uiState.isLoading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
-                uiState.notifications.isEmpty() -> {
+                uiState.alertas.isEmpty() -> { // Antes: uiState.notifications
                     Text(
-                        text = "No tienes notificaciones",
+                        text = "No tienes alertas", // Texto actualizado
                         modifier = Modifier.align(Alignment.Center),
                         fontSize = 18.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 else -> {
-                    // El NotificationList ahora es mucho más limpio.
                     NotificationList(
-                        notifications = uiState.notifications,
+                        notifications = uiState.alertas, // Se pasa la nueva lista de alertas
                         onDismiss = onDismissNotification
                     )
                 }
@@ -159,7 +166,7 @@ private fun NotificationScreen(
         AlertDialog(
             onDismissRequest = { showDeleteAllDialog = false },
             title = { Text("Confirmar eliminación") },
-            text = { Text("¿Estás seguro de que quieres eliminar todas las notificaciones? Esta acción no se puede deshacer.") },
+            text = { Text("¿Estás seguro de que quieres eliminar todas las alertas? Esta acción no se puede deshacer.") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -180,13 +187,11 @@ private fun NotificationScreen(
     }
 }
 
-
-// --- CAMBIO PRINCIPAL: SE SIMPLIFICA USANDO EL COMPONENTE REUTILIZABLE ---
-
 @Composable
 private fun NotificationList(
-    notifications: List<NotificationEntity>,
-    onDismiss: (NotificationEntity) -> Unit
+    // 8. LA LISTA AHORA RECIBE UNA LISTA DE MensajeEntity
+    notifications: List<MensajeEntity>,
+    onDismiss: (MensajeEntity) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -196,8 +201,7 @@ private fun NotificationList(
             items = notifications,
             key = { notification -> notification.id }
         ) { notification ->
-            // ¡AQUÍ ESTÁ LA MAGIA!
-            // Usamos el nuevo Composable, pasándole los datos correspondientes.
+            // El componente InfoRowItem funciona sin cambios, ya que solo recibe datos primitivos.
             InfoRowItem(
                 title = notification.titulo,
                 subtitle = notification.mensaje,
@@ -208,6 +212,3 @@ private fun NotificationList(
         }
     }
 }
-
-// El Composable "NotificationItem" anterior ya no es necesario y ha sido eliminado.
-// Toda su lógica ahora vive en el archivo "InfoRowItem.kt".

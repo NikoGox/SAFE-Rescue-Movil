@@ -34,6 +34,13 @@ interface UserDao {
     suspend fun getByEmailOrUsername(identifier: String): UserEntity?
 
     /**
+     * Actualiza únicamente el ID de la foto de un usuario específico.
+     * Esta es la función que faltaba para la lógica de cambio de foto de perfil.
+     */
+    @Query("UPDATE users SET foto_id = :newPhotoId WHERE id = :userId")
+    suspend fun updateUserPhotoId(userId: Long, newPhotoId: Long)
+
+    /**
      * Obtiene un usuario por su ID.
      */
     @Query("SELECT * FROM users WHERE id = :userId LIMIT 1")
@@ -82,6 +89,7 @@ interface UserDao {
         WHERE u.id = :userId
     """)
     suspend fun getUserProfileById(userId: Long): UserProfile?
+
 }
 
 

@@ -41,21 +41,22 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-// CAMBIO 1: Importar la nueva data class enriquecida
-import com.movil.saferescue.data.local.notification.NotificationWithSender
-import com.movil.saferescue.ui.viewmodel.NotificationViewModel
-import com.movil.saferescue.ui.viewmodel.NotificationViewModelFactory
+// 1. IMPORTACIONES ACTUALIZADAS
+import com.movil.saferescue.data.local.mensaje.MensajeConRemitente
+import com.movil.saferescue.ui.viewmodel.MensajeViewModel
+import com.movil.saferescue.ui.viewmodel.MensajeViewModelFactory
 
 /**
- * El Composable de nivel superior que ahora recibe la NotificationViewModelFactory.
- * No necesita cambios.
+ * El Composable de nivel superior que ahora recibe el MensajeViewModelFactory.
  */
 @Composable
 fun ChatScreenVm(
-    notificationViewModelFactory: NotificationViewModelFactory,
+    // 2. PARÁMETRO DEL FACTORY ACTUALIZADO
+    mensajeViewModelFactory: MensajeViewModelFactory,
     onNavigateBack: () -> Unit
 ) {
-    val viewModel: NotificationViewModel = viewModel(factory = notificationViewModelFactory)
+    // 3. SE CREA UNA INSTANCIA DEL VIEWMODEL CORRECTO
+    val viewModel: MensajeViewModel = viewModel(factory = mensajeViewModelFactory)
 
     ChatScreen(
         viewModel = viewModel,
@@ -69,20 +70,20 @@ fun ChatScreenVm(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatScreen(
-    viewModel: NotificationViewModel,
+    // 4. EL VIEWMODEL AHORA ES MensajeViewModel
+    viewModel: MensajeViewModel,
     onNavigateBack: () -> Unit
 ) {
-    // CAMBIO 2: El flujo ahora emite una lista de 'NotificationWithSender'
-    val messages by viewModel.allChatMessages.collectAsStateWithLifecycle(initialValue = emptyList())
+    // 5. EL FLUJO AHORA EMITE UNA LISTA DE 'MensajeConRemitente'
+    val mensajes by viewModel.todosLosMensajesDeChat.collectAsStateWithLifecycle(initialValue = emptyList())
     val listState = rememberLazyListState()
 
-    // CAMBIO 3: Simular el ID del usuario actual (debe coincidir con el del ViewModel)
-    // En una app real, este ID vendría del estado de la sesión.
+    // El ID del usuario actual para diferenciar las burbujas del chat
     val currentUserId = 3L
 
-    LaunchedEffect(messages) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.lastIndex)
+    LaunchedEffect(mensajes) {
+        if (mensajes.isNotEmpty()) {
+            listState.animateScrollToItem(mensajes.lastIndex)
         }
     }
 
@@ -100,8 +101,8 @@ private fun ChatScreen(
         bottomBar = {
             MessageInput(
                 onSendMessage = { text ->
-                    // No hay cambios aquí, el ViewModel se encarga de todo.
-                    viewModel.sendMessage(text)
+                    // 6. SE LLAMA A LA FUNCIÓN CORRECTA DEL VIEWMODEL
+                    viewModel.enviarMensajeDeChat(text)
                 }
             )
         }
@@ -115,15 +116,16 @@ private fun ChatScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(vertical = 12.dp)
         ) {
-            // CAMBIO 4: Iterar sobre la lista de 'NotificationWithSender'
+            // 7. SE ITERA SOBRE LA LISTA DE 'MensajeConRemitente'
             items(
-                items = messages,
-                key = { messageWithSender -> messageWithSender.notification.id } // La key es el ID de la notificación
-            ) { messageWithSender ->
+                items = mensajes,
+                // La key ahora se extrae de la propiedad 'mensaje'
+                key = { mensajeConRemitente -> mensajeConRemitente.mensaje.id }
+            ) { mensajeConRemitente ->
                 MessageBubble(
-                    message = messageWithSender,
-                    // Pasamos si el mensaje es del usuario actual, comparando IDs
-                    isFromCurrentUser = messageWithSender.notification.remitente_id == currentUserId
+                    mensaje = mensajeConRemitente,
+                    // Se compara el ID del remitente desde la propiedad 'mensaje'
+                    isFromCurrentUser = mensajeConRemitente.mensaje.remitente_id == currentUserId
                 )
             }
         }
@@ -135,23 +137,22 @@ private fun ChatScreen(
  */
 @Composable
 private fun MessageBubble(
-    // CAMBIO 5: La burbuja ahora recibe la data class enriquecida y un booleano
-    message: NotificationWithSender,
+    // 8. LA BURBUJA AHORA RECIBE LA DATA CLASS 'MensajeConRemitente'
+    mensaje: MensajeConRemitente,
     isFromCurrentUser: Boolean
 ) {
     val alignment = if (isFromCurrentUser) Alignment.End else Alignment.Start
     val backgroundColor = if (isFromCurrentUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
     val textColor = if (isFromCurrentUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
 
-    // Usamos una Columna para alinear el nombre del remitente y el mensaje
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = alignment
     ) {
-        // CAMBIO 6: Mostrar el nombre del remitente si NO es el usuario actual
         if (!isFromCurrentUser) {
             Text(
-                text = message.senderName,
+                // 9. SE USA LA PROPIEDAD 'nombreRemitente'
+                text = mensaje.nombreRemitente,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
@@ -160,20 +161,19 @@ private fun MessageBubble(
 
         Box(
             modifier = Modifier
-                // El ancho de la burbuja es relativo al ancho de la pantalla
                 .fillMaxWidth(0.85f)
                 .clip(RoundedCornerShape(16.dp))
                 .background(backgroundColor)
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Text(
-                text = message.notification.mensaje, // El texto del mensaje está dentro del objeto notificación
+                // 10. EL TEXTO DEL MENSAJE ESTÁ DENTRO DEL OBJETO 'mensaje'
+                text = mensaje.mensaje.mensaje,
                 color = textColor
             )
         }
     }
 }
-
 
 /**
  * El Composable para la barra de entrada de texto.

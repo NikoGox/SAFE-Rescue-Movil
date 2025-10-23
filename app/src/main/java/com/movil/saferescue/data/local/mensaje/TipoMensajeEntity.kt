@@ -1,4 +1,4 @@
-package com.movil.saferescue.data.local.notification
+package com.movil.saferescue.data.local.mensaje
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

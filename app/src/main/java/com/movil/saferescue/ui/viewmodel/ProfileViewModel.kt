@@ -1,7 +1,11 @@
 package com.movil.saferescue.ui.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.movil.saferescue.data.local.foto.FotoDao
+import com.movil.saferescue.data.local.foto.FotoEntity
 import com.movil.saferescue.data.local.user.UserEntity
 import com.movil.saferescue.data.local.user.UserProfile
 import com.movil.saferescue.data.repository.UserRepository
@@ -9,18 +13,22 @@ import com.movil.saferescue.domain.validation.validateChileanRUN
 import com.movil.saferescue.domain.validation.validateNameLettersOnly
 import com.movil.saferescue.domain.validation.validatePhoneDigitsOnly
 import com.movil.saferescue.domain.validation.validateUsername
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
+// <<< IMPORT ADICIONAL para generar el nombre de archivo con fecha
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-// 2. Data Class actualizada para usar el modelo de dominio
 data class ProfileUiState(
-    // Datos originales para poder cancelar la edición
     val originalUser: UserProfile? = null,
-
-    // Datos y errores de los campos editables
     val id: Long? = null,
     val name: String = "",
     val nameError: String? = null,
@@ -30,14 +38,10 @@ data class ProfileUiState(
     val phoneError: String? = null,
     val run: String = "",
     val dv: String = "",
-    val runAndDvError: String? = null, // Un solo error para RUN y DV
+    val runAndDvError: String? = null,
     val fotoUrl: String = "",
-
-    // Campos no editables que solo se muestran
     val email: String = "",
     val rol: String = "",
-
-    // Estados de la UI
     val isLoading: Boolean = true,
     val isEditing: Boolean = false,
     val canSave: Boolean = false,
@@ -46,7 +50,11 @@ data class ProfileUiState(
     val errorMsg: String? = null
 )
 
-class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
+class ProfileViewModel(
+    private val repository: UserRepository,
+    private val fotoDao: FotoDao,
+    private val applicationContext: Context
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
@@ -55,19 +63,16 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
         loadUserProfile()
     }
 
-    // 3. Lógica de carga COMPLETAMENTE SIMPLIFICADA
     fun loadUserProfile() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            // Llama al método que ya hace todo el trabajo pesado
             val userProfile = repository.getLoggedInUser()
 
             if (userProfile != null) {
-                // El repositorio ya nos dio el nombre del rol y la URL de la foto.
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        originalUser = userProfile, // Guardamos el estado original
+                        originalUser = userProfile,
                         id = userProfile.id,
                         name = userProfile.name,
                         username = userProfile.username,
@@ -75,8 +80,8 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
                         run = userProfile.run,
                         dv = userProfile.dv,
                         email = userProfile.email,
-                        rol = userProfile.rolName, // <-- Nombre del rol ya viene listo
-                        fotoUrl = userProfile.fotoUrl ?: "" // <-- URL de la foto ya viene lista
+                        rol = userProfile.rolName,
+                        fotoUrl = userProfile.fotoUrl ?: ""
                     )
                 }
             } else {
@@ -85,7 +90,68 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
         }
     }
 
-    // --- Handlers de edición (sin cambios, pero ahora más robustos) ---
+    /**
+     * Procesa la URI seleccionada, la copia a almacenamiento interno y guarda la nueva URI en la BD.
+     * @param uri La URI de la imagen seleccionada (de cámara o galería).
+     * @return El ID de la nueva FotoEntity guardada, o null si falla.
+     */
+    private suspend fun guardarImagenYObtenerId(uri: Uri): Long? {
+        return withContext(Dispatchers.IO) {
+            try {
+                // <<< CORRECCIÓN 1: Generar un nombre de archivo único que incluye la fecha.
+                val fileName = "IMG_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.jpg"
+                val destinationFile = File(applicationContext.filesDir, fileName)
+
+                applicationContext.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    FileOutputStream(destinationFile).use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+
+                // <<< CORRECCIÓN 2: Crear la entidad usando el nuevo campo 'nombre'.
+                val nuevaFoto = FotoEntity(
+                    nombre = fileName, // Se usa el nombre de archivo generado.
+                    url = Uri.fromFile(destinationFile).toString() // Guardamos la URI del archivo persistente.
+                )
+
+                fotoDao.insertFoto(nuevaFoto)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+    }
+
+    /**
+     * Función pública que orquesta el cambio de foto de perfil.
+     */
+    fun actualizarFotoDePerfil(uri: Uri) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSubmitting = true) }
+            val userId = _uiState.value.id
+            if (userId == null) {
+                _uiState.update { it.copy(isSubmitting = false, errorMsg = "Error: ID de usuario no encontrado.") }
+                return@launch
+            }
+
+            val nuevoFotoId = guardarImagenYObtenerId(uri)
+
+            if (nuevoFotoId != null) {
+                val result = repository.updateUserPhoto(userId, nuevoFotoId)
+                if (result.isSuccess) {
+                    loadUserProfile()
+                    _uiState.update { it.copy(isSubmitting = false, successMsg = "Foto de perfil actualizada.") }
+                } else {
+                    _uiState.update { it.copy(isSubmitting = false, errorMsg = "No se pudo actualizar la foto.") }
+                }
+            } else {
+                _uiState.update { it.copy(isSubmitting = false, errorMsg = "Error al guardar la nueva imagen.") }
+            }
+        }
+    }
+
+    // --- El resto del ViewModel no necesita cambios ---
 
     fun onNameChange(newName: String) {
         _uiState.update { it.copy(name = newName, nameError = validateNameLettersOnly(newName)) }
@@ -104,7 +170,6 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
 
     fun onRunChange(newRun: String) {
         _uiState.update { it.copy(run = newRun) }
-        // Validamos el RUN y el DV juntos
         val error = validateChileanRUN(_uiState.value.run, _uiState.value.dv)
         _uiState.update { it.copy(runAndDvError = error) }
         validateAllFields()
@@ -117,8 +182,6 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
         validateAllFields()
     }
 
-    // --- Lógica de UI (Guardar, Cancelar, etc.) ---
-
     private fun validateAllFields() {
         _uiState.update {
             val hasErrors = it.nameError != null || it.usernameError != null || it.phoneError != null || it.runAndDvError != null
@@ -129,7 +192,6 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
     fun cancelEdit() {
         _uiState.update { currentState ->
             currentState.originalUser?.let { original ->
-                // Restaura todo a partir del 'originalUser' guardado
                 currentState.copy(
                     isEditing = false,
                     name = original.name,
@@ -137,7 +199,6 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
                     phone = original.phone,
                     run = original.run,
                     dv = original.dv,
-                    // Limpiamos todos los errores
                     nameError = null,
                     usernameError = null,
                     phoneError = null,
@@ -145,7 +206,7 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
                     errorMsg = null,
                     successMsg = null
                 )
-            } ?: currentState // Si no hay original, no hagas nada
+            } ?: currentState
         }
     }
 
@@ -153,7 +214,6 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
         _uiState.update { it.copy(isEditing = !it.isEditing) }
     }
 
-    // 4. Lógica de guardado SIMPLIFICADA
     fun saveChanges() {
         val currentState = _uiState.value
         if (!currentState.canSave || currentState.id == null) return
@@ -161,7 +221,6 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, errorMsg = null, successMsg = null) }
 
-            // Creamos una UserEntity a partir del estado de la UI para enviarla al repositorio
             val updatedUserEntity = UserEntity(
                 id = currentState.id,
                 name = currentState.name,
@@ -177,7 +236,6 @@ class ProfileViewModel(private val repository: UserRepository) : ViewModel() {
             val result = repository.updateUser(updatedUserEntity)
 
             if (result.isSuccess) {
-                // Volvemos a cargar el perfil para obtener la información fresca y actualizada
                 loadUserProfile()
                 _uiState.update {
                     it.copy(

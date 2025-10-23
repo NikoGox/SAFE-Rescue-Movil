@@ -6,12 +6,14 @@ import com.movil.saferescue.data.repository.UserRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map // <<< CORRECCIÓN: Importación necesaria
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.movil.saferescue.domain.validation.*
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 
+// ... (Las data class LoginUiState y RegisterUiState no necesitan cambios) ...
 data class LoginUiState(
     val identifier: String = "",
     val pass: String = "",
@@ -34,7 +36,6 @@ data class RegisterUiState(
     val username: String = "",
     val fotoUrl: String = "",
     val rolId: Long = 2L,
-
     val nameError: String? = null,
     val emailError: String? = null,
     val phoneError: String? = null,
@@ -44,43 +45,65 @@ data class RegisterUiState(
     val dvError: String? = null,
     val usernameError: String? = null,
     val fotoUrlError: String? = null,
-
     val isSubmitting: Boolean = false,
     val canSubmit: Boolean = false,
     val success: Boolean = false,
     val errorMsg: String? = null
 )
 
+
 class AuthViewModel(
     private val repository: UserRepository
 ) : ViewModel() {
 
     private val _login = MutableStateFlow(LoginUiState())
-    val login: StateFlow<LoginUiState> = _login
+    val login: StateFlow<LoginUiState> = _login.asStateFlow()
 
     private val _register = MutableStateFlow(RegisterUiState())
     val register: StateFlow<RegisterUiState> = _register.asStateFlow()
 
+    // --- INICIO DE LA CORRECIÓN ---
+
+    // 1. Creamos el StateFlow interno y mutable para el estado de autenticación.
+    private val _isAuthenticated = MutableStateFlow(false)
+    // 2. Exponemos una versión pública e inmutable para ser observada por la UI (NavGraph).
+    val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
+
+    // --- FIN DE LA CORRECIÓN ---
 
     init {
         loadSavedPreferences()
+
+        // --- INICIO DE LA CORRECIÓN ---
+        // 3. El ViewModel escucha los cambios del Repositorio y actualiza su propio estado.
+        //    Esto hace que el sistema sea completamente reactivo.
+        viewModelScope.launch {
+            repository.loggedInUserId
+                .map { userId -> userId != null } // Convierte el ID (Long?) en un Booleano
+                .collect { isLoggedIn ->
+                    _isAuthenticated.value = isLoggedIn
+                }
+        }
+        // --- FIN DE LA CORRECIÓN ---
     }
 
-    /**
-     * Carga el identificador guardado desde el UserRepository (que usa DataStore)
-     * y lo establece en el estado de la UI.
-     */
     private fun loadSavedPreferences() {
         viewModelScope.launch {
-            // Usamos .first() para tomar solo el primer valor emitido por el Flow.
-            val savedIdentifier = repository.savedIdentifierFlow.first()
-            _login.update {
-                it.copy(identifier = savedIdentifier)
-            }
-            // Después de cargar el valor, revalidamos si el botón de submit debe estar activo.
+            val savedIdentifier = repository.savedIdentifierFlow.first() ?: ""
+            _login.update { it.copy(identifier = savedIdentifier) }
             recomputeLoginCanSubmit()
         }
     }
+
+    // --- INICIO DE LA CORRECIÓN ---
+    // 4. Creamos la función de logout que el NavGraph necesita.
+    fun logout() {
+        viewModelScope.launch {
+            repository.clearLoggedInUser() // Llama a la función del repositorio para limpiar el ID.
+        }
+    }
+    // --- FIN DE LA CORRECIÓN ---
+
 
     // ----------------- LOGIN: handlers y envío -----------------
     fun onLoginIdentifierChange(value: String) {
@@ -100,23 +123,17 @@ class AuthViewModel(
         _login.update { it.copy(canSubmit = can) }
     }
 
-    // --- 4. FUNCIÓN submitLogin ACTUALIZADA ---
-    /**
-     * Inicia el proceso de login. Ahora recibe el estado del checkbox "Recordarme".
-     */
     fun submitLogin(rememberMe: Boolean) {
         val s = _login.value
         if (!s.canSubmit || s.isSubmitting) return
         viewModelScope.launch {
             _login.update { it.copy(isSubmitting = true, errorMsg = null, success = false) }
-            delay(500)
 
-            // Llamamos a la nueva función de login del repositorio, pasándole el estado de `rememberMe`.
+            // --- CORRECCIÓN: Llamamos al repositorio. El repositorio es el que actualiza
+            // el loggedInUserId. El ViewModel ya no necesita llamar a setLoggedInUserId.
             val result = repository.login(s.identifier, s.pass, rememberMe)
 
             if (result.isSuccess) {
-                val user = result.getOrThrow()
-                repository.setLoggedInUserId(user.id)
                 _login.update {
                     it.copy(isSubmitting = false, success = true, errorMsg = null)
                 }
@@ -131,14 +148,10 @@ class AuthViewModel(
         }
     }
 
-
+    // ... (El resto del archivo: clearLoginResult, toda la sección de REGISTRO, etc., no necesitan cambios) ...
     fun clearLoginResult() {
         _login.update { it.copy(success = false, errorMsg = null) }
     }
-
-
-    // ----------------- REGISTRO: handlers y envío (Sin cambios) -----------------
-    // Toda la lógica de registro se mantiene exactamente igual.
 
     fun onNameChange(value: String) {
         val filtered = value.filter { it.isLetter() || it.isWhitespace() }
