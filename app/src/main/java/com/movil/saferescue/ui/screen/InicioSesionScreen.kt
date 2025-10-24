@@ -34,6 +34,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.movil.saferescue.R
 import com.movil.saferescue.ui.theme.PrimaryBlue
 import com.movil.saferescue.ui.theme.SecondaryRed
+import com.movil.saferescue.ui.theme.uno_tres
 import com.movil.saferescue.ui.viewmodel.AuthViewModel
 import com.movil.saferescue.ui.viewmodel.AuthViewModelFactory
 
@@ -45,21 +46,23 @@ import com.movil.saferescue.ui.viewmodel.AuthViewModelFactory
 fun LoginScreenVm(
     onLoginOkNavigateHome: () -> Unit,
     onGoRegister: () -> Unit,
-    factory: AuthViewModelFactory
+    factory: AuthViewModelFactory,
+    // Permitimos pasar la instancia desde NavGraph para garantizar un único ViewModel compartido
+    authViewModelFromParent: AuthViewModel? = null
 ) {
-    val vm: AuthViewModel = viewModel(factory = factory)
+    val vm: AuthViewModel = authViewModelFromParent ?: viewModel(factory = factory)
     val state by vm.login.collectAsStateWithLifecycle()
+    val isAuthenticated by vm.isAuthenticated.collectAsStateWithLifecycle()
     var rememberMe by remember { mutableStateOf(false) }
 
-    // Navegación automática en caso de éxito
-    LaunchedEffect(state.success) {
-        if (state.success) {
+    // Navegación automática solo cuando isAuthenticated cambia a true
+    LaunchedEffect(isAuthenticated) {
+        if (isAuthenticated == true) {
             onLoginOkNavigateHome()
-            vm.clearLoginResult()
         }
     }
 
-    // Delegamos a la UI presentacional, pasando todos los estados y eventos
+    // Delegamos a la UI presentacional
     LoginScreen(
         identifier = state.identifier,
         pass = state.pass,
@@ -105,11 +108,12 @@ private fun LoginScreen(
             .padding(26.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(Modifier.height(16.dp))
 
         Text(
-            text = "Bienvenido a",
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color.Black
+            text = "Bienvenido a ",
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium),
+            color = Color.DarkGray
         )
         Spacer(Modifier.height(16.dp))
 
@@ -120,12 +124,13 @@ private fun LoginScreen(
             modifier = Modifier.size(150.dp)
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
 
         Text(
             text = "SAFE Rescue",
-            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold), // Montserrat/Inter Bold
-            color = PrimaryBlue
+            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold), // Montserrat/Inter Bold
+            color = uno_tres
+
         )
 
         Spacer(Modifier.height(10.dp))
@@ -133,7 +138,7 @@ private fun LoginScreen(
         Text(
             text = "Accede a tu cuenta",
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium), // Montserrat/Inter Medium
-            color = Color.Gray
+            color = Color.DarkGray
         )
 
         Spacer(Modifier.height(48.dp))
@@ -274,7 +279,7 @@ private fun LoginScreen(
         Spacer(Modifier.height(32.dp))
 
         Text(
-            text = "Versión 1.5.2",
+            text = "Versión 1.6",
             color = Color.Gray,
             modifier = Modifier.padding(top = 8.dp)
         )

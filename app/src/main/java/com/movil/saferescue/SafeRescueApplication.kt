@@ -17,12 +17,9 @@ class SafeRescueApplication : Application() {
     // Aunque no es estrictamente necesario aquí, es una buena práctica para un scope de aplicación.
     private val applicationScope = CoroutineScope(SupervisorJob())
 
-    // 1. La base de datos sigue siendo lazy para que no se cree hasta que se necesite,
-    //    pero la vamos a "calentar" proactivamente.
     val database by lazy { AppDatabase.getDatabase(this, applicationScope) }
     val userPreferences by lazy { UserPreferences(this) }
 
-    // 2. Los repositorios también pueden seguir siendo lazy.
     val userRepository by lazy { UserRepository(database.userDao(), database.fotoDao(), userPreferences) }
     val incidenteRepository by lazy { IncidenteRepository(database.incidenteDao(), database.fotoDao()) }
     val mensajeRepository by lazy { MensajeRepository(database.mensajeDao(), database.userDao()) }

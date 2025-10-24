@@ -1,19 +1,19 @@
+// Ruta: app/src/main/java/com/movil/saferescue/ui/viewmodel/AuthViewModel.kt
 package com.movil.saferescue.ui.viewmodel
 
+import androidx.compose.ui.semantics.password
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.movil.saferescue.data.repository.UserRepository
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map // <<< CORRECCIÓN: Importación necesaria
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import com.movil.saferescue.data.local.storage.UserPreferences
+import com.movil.saferescue.data.local.user.UserEntity
+import com.movil.saferescue.data.repository.UserRepository // <<< ¡IMPORTANTE!
 import com.movil.saferescue.domain.validation.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import org.mindrot.jbcrypt.BCrypt
 
-// ... (Las data class LoginUiState y RegisterUiState no necesitan cambios) ...
+// Las clases data LoginUiState y RegisterUiState no cambian
+
 data class LoginUiState(
     val identifier: String = "",
     val pass: String = "",
@@ -35,7 +35,7 @@ data class RegisterUiState(
     val dv: String = "",
     val username: String = "",
     val fotoUrl: String = "",
-    val rolId: Long = 2L,
+    val rolId: Long = 3L,
     val nameError: String? = null,
     val emailError: String? = null,
     val phoneError: String? = null,
@@ -53,7 +53,8 @@ data class RegisterUiState(
 
 
 class AuthViewModel(
-    private val repository: UserRepository
+    private val userRepository: UserRepository,
+    private val userPreferences: UserPreferences
 ) : ViewModel() {
 
     private val _login = MutableStateFlow(LoginUiState())
@@ -62,204 +63,180 @@ class AuthViewModel(
     private val _register = MutableStateFlow(RegisterUiState())
     val register: StateFlow<RegisterUiState> = _register.asStateFlow()
 
-    // --- INICIO DE LA CORRECIÓN ---
-
-    // 1. Creamos el StateFlow interno y mutable para el estado de autenticación.
-    private val _isAuthenticated = MutableStateFlow(false)
-    // 2. Exponemos una versión pública e inmutable para ser observada por la UI (NavGraph).
-    val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
-
-    // --- FIN DE LA CORRECIÓN ---
+    private val _isAuthenticated = MutableStateFlow<Boolean?>(null)
+    val isAuthenticated: StateFlow<Boolean?> = _isAuthenticated.asStateFlow()
 
     init {
-        loadSavedPreferences()
-
-        // --- INICIO DE LA CORRECIÓN ---
-        // 3. El ViewModel escucha los cambios del Repositorio y actualiza su propio estado.
-        //    Esto hace que el sistema sea completamente reactivo.
+        // Intento de restauración de sesión al inicio
         viewModelScope.launch {
-            repository.loggedInUserId
-                .map { userId -> userId != null } // Convierte el ID (Long?) en un Booleano
-                .collect { isLoggedIn ->
-                    _isAuthenticated.value = isLoggedIn
+            // Leemos solo el valor inicial de activeUserIdFlow para intentar restaurar
+            // la sesión al iniciar el ViewModel. No hacemos una colección continua porque
+            // eso provocaba que, al no persistir la sesión (rememberMe = false), el flujo
+            // emitiera null y sobreescribiera el estado de autenticación justo después
+            // de un login exitoso, forzando un logout inmediato.
+            try {
+                val userId = userPreferences.activeUserIdFlow.firstOrNull()
+                if (userId != null) {
+                    userRepository.tryLoginFromPreferences().fold(
+                        onSuccess = { user ->
+                            _isAuthenticated.value = user != null
+                        },
+                        onFailure = {
+                            _isAuthenticated.value = false
+                        }
+                    )
+                } else {
+                    _isAuthenticated.value = false
                 }
+            } catch (e: Exception) {
+                _isAuthenticated.value = false
+            }
         }
-        // --- FIN DE LA CORRECIÓN ---
     }
 
-    private fun loadSavedPreferences() {
+    fun setAuthenticationState(authenticated: Boolean) {
+        _isAuthenticated.value = authenticated
+    }
+
+    private fun clearAllState() {
         viewModelScope.launch {
-            val savedIdentifier = repository.savedIdentifierFlow.first() ?: ""
-            _login.update { it.copy(identifier = savedIdentifier) }
-            recomputeLoginCanSubmit()
+            userPreferences.clearUserSession()
+            userPreferences.clearUserIdentifier()
+            _login.update { LoginUiState() }
+            _register.update { RegisterUiState() }
+            _isAuthenticated.value = false
         }
     }
 
-    // --- INICIO DE LA CORRECIÓN ---
-    // 4. Creamos la función de logout que el NavGraph necesita.
+    /**
+     * Cierra la sesión del usuario. Limpia la sesión persistente.
+     */
     fun logout() {
         viewModelScope.launch {
-            repository.clearLoggedInUser() // Llama a la función del repositorio para limpiar el ID.
+            userRepository.clearLoggedInUser()
+            userPreferences.clearUserSession()
+            userPreferences.clearUserIdentifier()
+            _login.update { LoginUiState() }
+            _register.update { RegisterUiState() }
+            _isAuthenticated.value = false
         }
     }
-    // --- FIN DE LA CORRECIÓN ---
 
-
-    // ----------------- LOGIN: handlers y envío -----------------
-    fun onLoginIdentifierChange(value: String) {
-        val error = if (value.isBlank()) "El campo es obligatorio" else null
-        _login.update { it.copy(identifier = value, identifierError = error) }
-        recomputeLoginCanSubmit()
-    }
-
-    fun onLoginPassChange(value: String) {
-        _login.update { it.copy(pass = value) }
-        recomputeLoginCanSubmit()
-    }
-
-    private fun recomputeLoginCanSubmit() {
-        val s = _login.value
-        val can = s.identifier.isNotBlank() && s.pass.isNotBlank()
-        _login.update { it.copy(canSubmit = can) }
-    }
+    // --- LÓGICA DE LOGIN ---
 
     fun submitLogin(rememberMe: Boolean) {
         val s = _login.value
         if (!s.canSubmit || s.isSubmitting) return
+
         viewModelScope.launch {
-            _login.update { it.copy(isSubmitting = true, errorMsg = null, success = false) }
+            try {
+                _login.update { it.copy(isSubmitting = true, errorMsg = null) }
 
-            // --- CORRECCIÓN: Llamamos al repositorio. El repositorio es el que actualiza
-            // el loggedInUserId. El ViewModel ya no necesita llamar a setLoggedInUserId.
-            val result = repository.login(s.identifier, s.pass, rememberMe)
-
-            if (result.isSuccess) {
-                _login.update {
-                    it.copy(isSubmitting = false, success = true, errorMsg = null)
-                }
-            } else {
+                val result = userRepository.login(s.identifier, s.pass, rememberMe)
+                result.fold(
+                    onSuccess = { user ->
+                        // Primero establecemos el estado de autenticación
+                        _isAuthenticated.value = true
+                        // Luego manejamos la persistencia si es necesario
+                        if (rememberMe) {
+                            userPreferences.saveUserSession(user.id)
+                            userPreferences.saveUserIdentifier(s.identifier)
+                        }
+                        // Finalmente actualizamos el estado del login
+                        _login.update { it.copy(success = true, isSubmitting = false) }
+                    },
+                    onFailure = { e ->
+                        _isAuthenticated.value = false
+                        userPreferences.clearUserSession()
+                        userPreferences.clearUserIdentifier()
+                        _login.update {
+                            it.copy(
+                                isSubmitting = false,
+                                errorMsg = e.message ?: "Error al iniciar sesión"
+                            )
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                _isAuthenticated.value = false
+                userPreferences.clearUserSession()
+                userPreferences.clearUserIdentifier()
                 _login.update {
                     it.copy(
-                        isSubmitting = false, success = false,
-                        errorMsg = result.exceptionOrNull()?.message ?: "Error de autenticación"
+                        isSubmitting = false,
+                        errorMsg = "Error inesperado al iniciar sesión"
                     )
                 }
             }
         }
     }
 
-    // ... (El resto del archivo: clearLoginResult, toda la sección de REGISTRO, etc., no necesitan cambios) ...
-    fun clearLoginResult() {
-        _login.update { it.copy(success = false, errorMsg = null) }
-    }
-
-    fun onNameChange(value: String) {
-        val filtered = value.filter { it.isLetter() || it.isWhitespace() }
-        _register.update {
-            it.copy(name = filtered, nameError = validateNameLettersOnly(filtered))
-        }
-        recomputeRegisterCanSubmit()
-    }
-
-    fun onRegisterEmailChange(value: String) {
-        _register.update { it.copy(email = value, emailError = validateEmail(value)) }
-        recomputeRegisterCanSubmit()
-    }
-
-    fun onPhoneChange(value: String) {
-        val digitsOnly = value.filter { it.isDigit() }
-        _register.update {
-            it.copy(phone = digitsOnly, phoneError = validatePhoneDigitsOnly(digitsOnly))
-        }
-        recomputeRegisterCanSubmit()
-    }
-
-    fun onRegisterPassChange(value: String) {
-        _register.update { it.copy(pass = value, passError = validateStrongPassword(value)) }
-        _register.update { it.copy(confirmError = validateConfirm(it.pass, it.confirm)) }
-        recomputeRegisterCanSubmit()
-    }
-
-    fun onConfirmChange(value: String) {
-        _register.update { it.copy(confirm = value, confirmError = validateConfirm(it.pass, value)) }
-        recomputeRegisterCanSubmit()
-    }
-
-    fun onUsernameChange(value: String) {
-        _register.update {
-            it.copy(username = value, usernameError = validateUsername(value))
-        }
-        recomputeRegisterCanSubmit()
-    }
-
-    fun onRunChange(value: String) {
-        val digitsOnly = value.filter { it.isDigit() }
-        val runError = validateChileanRUN(digitsOnly, _register.value.dv)
-        _register.update {
-            it.copy(run = digitsOnly, runError = runError, dvError = runError)
-        }
-        recomputeRegisterCanSubmit()
-    }
-
-    fun onDvChange(value: String) {
-        val upperValue = value.uppercase().filter { it.isLetterOrDigit() }
-        val runError = validateChileanRUN(_register.value.run, upperValue)
-        _register.update {
-            it.copy(dv = upperValue, runError = runError, dvError = runError)
-        }
-        recomputeRegisterCanSubmit()
-    }
-
-    fun onFotoUrlChange(value: String) {
-        _register.update { it.copy(fotoUrl = value, fotoUrlError = if (value.isNotBlank()) validateUrl(value) else null) }
-        recomputeRegisterCanSubmit()
-    }
-
-    fun onRolIdChange(value: Long) {
-        _register.update { it.copy(rolId = value) }
-        recomputeRegisterCanSubmit()
-    }
-
-    private fun recomputeRegisterCanSubmit() {
-        val s = _register.value
-        val noErrors = listOf(s.nameError, s.emailError, s.phoneError, s.passError, s.confirmError, s.usernameError, s.runError, s.dvError, s.fotoUrlError).all { it == null }
-        val filled = s.name.isNotBlank() && s.email.isNotBlank() && s.phone.isNotBlank() && s.pass.isNotBlank() && s.confirm.isNotBlank() && s.username.isNotBlank() && s.run.isNotBlank() && s.dv.isNotBlank() && s.rolId > 0
-        _register.update { it.copy(canSubmit = noErrors && filled) }
-    }
+    // --- LÓGICA DE REGISTRO ---
 
     fun submitRegister() {
         val s = _register.value
         if (!s.canSubmit || s.isSubmitting) return
+
         viewModelScope.launch {
-            _register.update { it.copy(isSubmitting = true, errorMsg = null, success = false) }
-            delay(700)
+            try {
+                _register.update { it.copy(isSubmitting = true, errorMsg = null, success = false) }
 
-            val result = repository.register(
-                name = s.name,
-                email = s.email,
-                phone = s.phone,
-                pass = s.pass,
-                username = s.username,
-                run = s.run,
-                dv = s.dv,
-                fotoUrl = s.fotoUrl,
-                rol_id = s.rolId
-            )
+                // Verificar si el usuario ya existe
+                val existingUser = userRepository.getByEmailOrUsername(s.email)
+                    ?: userRepository.getByEmailOrUsername(s.username)
 
-            _register.update {
-                if (result.isSuccess) {
-                    it.copy(isSubmitting = false, success = true, errorMsg = null)
-                } else {
+                if (existingUser != null) {
+                    val errorMsg = when {
+                        existingUser.email == s.email -> "El email ya está en uso"
+                        existingUser.username == s.username -> "El nombre de usuario ya está en uso"
+                        else -> "Usuario ya existe"
+                    }
+                    throw Exception(errorMsg)
+                }
+
+                // Crear nuevo usuario
+                val hashedPassword = BCrypt.hashpw(s.pass, BCrypt.gensalt())
+                val newUser = UserEntity(
+                    name = s.name,
+                    email = s.email,
+                    phone = s.phone,
+                    password = hashedPassword,
+                    username = s.username,
+                    run = s.run,
+                    dv = s.dv,
+                    foto_id = null,
+                    rol_id = s.rolId
+                )
+
+                userRepository.createUser(newUser)
+                _register.update { it.copy(isSubmitting = false, success = true) }
+
+            } catch (e: Exception) {
+                _register.update {
                     it.copy(
-                        isSubmitting = false, success = false,
-                        errorMsg = result.exceptionOrNull()?.message ?: "No se pudo registrar"
+                        isSubmitting = false,
+                        errorMsg = e.message ?: "Error al registrar el usuario"
                     )
                 }
             }
         }
     }
 
-    fun clearRegisterResult() {
-        _register.update { it.copy(success = false, errorMsg = null) }
-    }
+    // --- El resto de funciones (handlers de cambio de texto y validaciones) no cambian ---
+    fun onLoginIdentifierChange(value: String) { _login.update { it.copy(identifier = value, identifierError = null, errorMsg = null) }; recomputeLoginCanSubmit() }
+    fun onLoginPassChange(value: String) { _login.update { it.copy(pass = value, passError = null, errorMsg = null) }; recomputeLoginCanSubmit() }
+    private fun recomputeLoginCanSubmit() { val s = _login.value; _login.update { it.copy(canSubmit = s.identifier.isNotBlank() && s.pass.isNotBlank()) } }
+    fun clearLoginResult() { _login.update { it.copy(success = false, errorMsg = null) } }
+    fun onNameChange(value: String) { val f = value.filter { it.isLetter() || it.isWhitespace() }; _register.update { it.copy(name = f, nameError = validateNameLettersOnly(f)) }; recomputeRegisterCanSubmit() }
+    fun onRegisterEmailChange(value: String) { _register.update { it.copy(email = value, emailError = validateEmail(value)) }; recomputeRegisterCanSubmit() }
+    fun onPhoneChange(value: String) { val d = value.filter { it.isDigit() }; _register.update { it.copy(phone = d, phoneError = validatePhoneDigitsOnly(d)) }; recomputeRegisterCanSubmit() }
+    fun onRegisterPassChange(value: String) { _register.update { it.copy(pass = value, passError = validateStrongPassword(value), confirmError = validateConfirm(value, it.confirm)) }; recomputeRegisterCanSubmit() }
+    fun onConfirmChange(value: String) { _register.update { it.copy(confirm = value, confirmError = validateConfirm(it.pass, value)) }; recomputeRegisterCanSubmit() }
+    fun onUsernameChange(value: String) { _register.update { it.copy(username = value, usernameError = validateUsername(value)) }; recomputeRegisterCanSubmit() }
+    fun onRunChange(value: String) { val d = value.filter { it.isDigit() }; val e = validateChileanRUN(d, _register.value.dv); _register.update { it.copy(run = d, runError = e, dvError = e) }; recomputeRegisterCanSubmit() }
+    fun onDvChange(value: String) { val u = value.uppercase().filter { it.isLetterOrDigit() }; val e = validateChileanRUN(_register.value.run, u); _register.update { it.copy(dv = u, runError = e, dvError = e) }; recomputeRegisterCanSubmit() }
+    fun onFotoUrlChange(value: String) { _register.update { it.copy(fotoUrl = value, fotoUrlError = if (value.isNotBlank()) validateUrl(value) else null) }; recomputeRegisterCanSubmit() }
+    fun onRolIdChange(value: Long) { _register.update { it.copy(rolId = value) }; recomputeRegisterCanSubmit() }
+    private fun recomputeRegisterCanSubmit() { val s = _register.value; val ok = listOf(s.nameError, s.emailError, s.phoneError, s.passError, s.confirmError, s.usernameError, s.runError, s.dvError, s.fotoUrlError).all { it == null }; val filled = s.name.isNotBlank() && s.email.isNotBlank() && s.phone.isNotBlank() && s.pass.isNotBlank() && s.confirm.isNotBlank() && s.username.isNotBlank() && s.run.isNotBlank() && s.dv.isNotBlank(); _register.update { it.copy(canSubmit = ok && filled) } }
+    fun clearRegisterResult() { _register.update { RegisterUiState() } }
 }

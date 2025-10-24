@@ -13,14 +13,16 @@ import com.movil.saferescue.ui.viewmodel.ProfileViewModelFactory
 
 class MainActivity : ComponentActivity() {
 
+    // 
     private val authViewModelFactory by lazy {
         val appContainer = application as SafeRescueApplication
         AuthViewModelFactory(
-            appContainer.userRepository,
-            applicationContext
+            userRepository = appContainer.userRepository,
+            userPreferences = appContainer.userPreferences
         )
     }
 
+    // El resto de las factories ya estaban correctas. No necesitan cambios.
     private val profileViewModelFactory by lazy {
         val appContainer = application as SafeRescueApplication
         ProfileViewModelFactory(
@@ -51,7 +53,7 @@ class MainActivity : ComponentActivity() {
             SAFERescueTheme {
                 val navController = rememberNavController()
 
-                // Pasamos las factorías, tal como tu NavGraph espera
+                // Pasamos las factorías, que ahora se crean correctamente.
                 AppNavGraph(
                     navController = navController,
                     authViewModelFactory = authViewModelFactory,

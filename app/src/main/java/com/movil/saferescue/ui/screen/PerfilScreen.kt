@@ -18,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -54,166 +53,124 @@ fun ProfileScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { paddingValues ->
+    // <<< CORRECCIÓN: Se elimina el Scaffold y se usa un Box como contenedor principal >>>
+    // Esto permite que el Snackbar flote por encima del contenido.
+    Box(modifier = Modifier.fillMaxSize()) {
         if (state.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-            return@Scaffold
-        }
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else {
+            // El contenido principal de la pantalla va dentro de una columna que puede hacer scroll
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()) // Permite el scroll vertical
+                    .padding(horizontal = 16.dp), // Mantenemos el padding horizontal
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 1. Botón para activar/desactivar modo edición
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(
+                        onClick = {
+                            if (state.isEditing) {
+                                vm.cancelEdit()
+                            } else {
+                                vm.toggleEditMode()
+                            }
+                        }
+                    ) {
+                        Icon(if (state.isEditing) Icons.Default.Close else Icons.Default.Edit, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text(if (state.isEditing) "Cancelar" else "Editar")
+                    }
+                }
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues) // Usar el padding del Scaffold
-                .padding(horizontal = 16.dp) // Añadir padding horizontal propio
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // 1. Botón para activar/desactivar modo edición
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(
-                    onClick = {
-                        if (state.isEditing) {
-                            vm.cancelEdit() // Restaura los datos originales si se cancela
+                Spacer(Modifier.height(16.dp))
+
+                // 2. Imagen de Perfil
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(state.fotoUrl)
+                        .crossfade(true)
+                        .build(),
+                    placeholder = painterResource(id = R.drawable.perfil_default),
+                    error = painterResource(id = R.drawable.perfil_default),
+                    contentDescription = "Foto de Perfil",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentScale = ContentScale.Crop
+                )
+
+                Spacer(Modifier.height(8.dp))
+                Text(state.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(state.email, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                Spacer(Modifier.height(24.dp))
+                Divider()
+
+                // --- CAMPOS DE INFORMACIÓN ---
+                ProfileInfoRow(icon = Icons.Default.Work, label = "Rol", value = state.rol)
+                ProfileTextField(label = "Nombre Completo", value = state.name, onValueChange = vm::onNameChange, enabled = state.isEditing, error = state.nameError, leadingIcon = Icons.Default.Person)
+                ProfileTextField(label = "Nombre de Usuario", value = state.username, onValueChange = vm::onUsernameChange, enabled = state.isEditing, error = state.usernameError, leadingIcon = Icons.Default.AlternateEmail)
+                ProfileTextField(label = "Teléfono", value = state.phone, onValueChange = vm::onPhoneChange, enabled = state.isEditing, error = state.phoneError, leadingIcon = Icons.Default.Phone, keyboardType = KeyboardType.Phone)
+
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                    ProfileTextField(modifier = Modifier.weight(1f), label = "RUN", value = state.run, onValueChange = vm::onRunChange, enabled = state.isEditing, isError = state.runAndDvError != null, keyboardType = KeyboardType.Number)
+                    Text("-", Modifier.padding(horizontal = 8.dp, vertical = 24.dp))
+                    ProfileTextField(modifier = Modifier.width(70.dp), label = "DV", value = state.dv, onValueChange = vm::onDvChange, enabled = state.isEditing, isError = state.runAndDvError != null)
+                }
+
+                AnimatedVisibility(visible = state.runAndDvError != null) {
+                    Text(
+                        text = state.runAndDvError ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 16.dp)
+                    )
+                }
+
+                ProfileInfoRow(icon = Icons.Default.Image, label = "URL de Foto", value = state.fotoUrl)
+
+                Spacer(Modifier.height(24.dp))
+
+                // Botón de Guardar
+                AnimatedVisibility(visible = state.isEditing) {
+                    Button(
+                        onClick = vm::saveChanges,
+                        enabled = !state.isSubmitting && state.canSave,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                    ) {
+                        if (state.isSubmitting) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
                         } else {
-                            vm.toggleEditMode() // Activa el modo edición
+                            Text("Guardar Cambios")
                         }
                     }
-                ) {
-                    Icon(if (state.isEditing) Icons.Default.Close else Icons.Default.Edit, contentDescription = null)
-                    Spacer(Modifier.width(4.dp))
-                    Text(if (state.isEditing) "Cancelar" else "Editar")
                 }
+                Spacer(Modifier.height(16.dp))
             }
-
-            Spacer(Modifier.height(16.dp))
-
-            // 2. Imagen de Perfil (usando Coil)
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(state.fotoUrl)
-                    .crossfade(true)
-                    .build(),
-                placeholder = painterResource(id = R.drawable.perfil_default),
-                error = painterResource(id = R.drawable.perfil_default),
-                contentDescription = "Foto de Perfil",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentScale = ContentScale.Crop
-            )
-
-            Spacer(Modifier.height(8.dp))
-            Text(state.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text(state.email, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-            Spacer(Modifier.height(24.dp))
-            Divider()
-
-            // --- CAMPOS DE INFORMACIÓN ---
-
-            // Rol (No editable)
-            ProfileInfoRow(icon = Icons.Default.Work, label = "Rol", value = state.rol)
-
-            // Nombre (Editable)
-            ProfileTextField(
-                label = "Nombre Completo",
-                value = state.name,
-                onValueChange = vm::onNameChange,
-                enabled = state.isEditing,
-                error = state.nameError,
-                leadingIcon = Icons.Default.Person
-            )
-
-            // Nombre de Usuario (Editable)
-            ProfileTextField(
-                label = "Nombre de Usuario",
-                value = state.username,
-                onValueChange = vm::onUsernameChange,
-                enabled = state.isEditing,
-                error = state.usernameError,
-                leadingIcon = Icons.Default.AlternateEmail
-            )
-
-            // Teléfono (Editable)
-            ProfileTextField(
-                label = "Teléfono",
-                value = state.phone,
-                onValueChange = vm::onPhoneChange,
-                enabled = state.isEditing,
-                error = state.phoneError,
-                leadingIcon = Icons.Default.Phone,
-                keyboardType = KeyboardType.Phone
-            )
-
-            // 3. RUN y DV (Corregido para mostrar un solo error)
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                ProfileTextField(
-                    modifier = Modifier.weight(1f),
-                    label = "RUN",
-                    value = state.run,
-                    onValueChange = vm::onRunChange,
-                    enabled = state.isEditing,
-                    isError = state.runAndDvError != null, // Solo marca el error, no muestra texto
-                    keyboardType = KeyboardType.Number
-                )
-                Text("-", Modifier.padding(horizontal = 8.dp, vertical = 24.dp))
-                ProfileTextField(
-                    modifier = Modifier.width(70.dp),
-                    label = "DV",
-                    value = state.dv,
-                    onValueChange = vm::onDvChange,
-                    enabled = state.isEditing,
-                    isError = state.runAndDvError != null // Solo marca el error, no muestra texto
-                )
-            }
-            // Mostrar el mensaje de error para RUN/DV debajo de ambos campos
-            AnimatedVisibility(visible = state.runAndDvError != null) {
-                Text(
-                    text = state.runAndDvError ?: "",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(end = 16.dp)
-                )
-            }
-
-            // 4. URL de Foto (Deshabilitado para edición manual)
-            ProfileInfoRow(icon = Icons.Default.Image, label = "URL de Foto", value = state.fotoUrl)
-
-            Spacer(Modifier.height(24.dp))
-
-            // 5. Botón de Guardar
-            AnimatedVisibility(visible = state.isEditing) {
-                Button(
-                    onClick = vm::saveChanges,
-                    enabled = !state.isSubmitting && state.canSave,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                ) {
-                    if (state.isSubmitting) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    } else {
-                        Text("Guardar Cambios")
-                    }
-                }
-            }
-            Spacer(Modifier.height(16.dp)) // Espacio al final
         }
+
+        // <<< CORRECCIÓN: El SnackbarHost se coloca en el Box para que flote sobre todo lo demás >>>
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter) // Se alinea en la parte inferior central
+        )
     }
 }
 
-// Componente para campos de texto reutilizable, ahora con icono
+// Los componentes ProfileTextField y ProfileInfoRow no necesitan cambios.
+// ... (El resto de tu código para ProfileTextField y ProfileInfoRow va aquí)
+
 @Composable
 private fun ProfileTextField(
     label: String,
@@ -251,7 +208,6 @@ private fun ProfileTextField(
     }
 }
 
-// Componente para mostrar información (puede estar habilitado o no, pero siempre es readOnly)
 @Composable
 private fun ProfileInfoRow(icon: ImageVector, label: String, value: String) {
     OutlinedTextField(
@@ -262,7 +218,7 @@ private fun ProfileInfoRow(icon: ImageVector, label: String, value: String) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        enabled = false, // Siempre deshabilitado para que el usuario no intente interactuar
+        enabled = false,
         readOnly = true,
         colors = OutlinedTextFieldDefaults.colors(
             disabledTextColor = MaterialTheme.colorScheme.onSurface,

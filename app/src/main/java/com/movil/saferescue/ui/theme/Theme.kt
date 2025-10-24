@@ -1,43 +1,31 @@
 package com.movil.saferescue.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 
-private val LightColorScheme = lightColorScheme(
-    primary = SRPrimaryBlue, // El azul principal
-    secondary = SRSecondaryRed, // El rojo de acento
-    tertiary = Color.Black, // Color de texto/ícono terciario
-    background = SRBackgroundLight, // Fondo claro de la marca
-    surface = Color.White,
-    onPrimary = Color.White, // Color del texto/icono sobre el color primario
-    onBackground = Color(0xFF1C1B1F), // Color del texto/icono sobre el fondo
+// Paleta de colores personalizada y ÚNICA para toda la aplicación.
+private val AppColorScheme = lightColorScheme(
+    primary = SRPrimaryBlue,          // El azul principal de la marca.
+    secondary = SRSecondaryRed,       // El rojo de acento.
+    tertiary = Color.Black,           // Color de texto/ícono terciario.
+    background = SRBackgroundLight,   // Fondo claro de la marca.
+    surface = Color.White,            // Color para superficies como Cards, Menus.
+    onPrimary = Color.White,          // Texto/ícono sobre el color primario.
+    onBackground = Color(0xFF1C1B1F), // Texto/ícono sobre el color de fondo.
 )
-
-private val DarkColorScheme = LightColorScheme
 
 @Composable
 fun SAFERescueTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Los parámetros de darkTheme y dynamicColor se ignoran para forzar un tema consistente.
+    darkTheme: Boolean = false, // No se usará
+    dynamicColor: Boolean = false, // No se usará
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    // Se aplica siempre la misma paleta de colores (AppColorScheme),
+    // ignorando la configuración del sistema (tema oscuro o colores dinámicos).
+    val colorScheme = AppColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

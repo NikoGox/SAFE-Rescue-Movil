@@ -38,43 +38,58 @@ class UserRepository(
 
     val savedIdentifierFlow: Flow<String?> = userPreferences.savedIdentifierFlow
 
-    suspend fun login(identifier: String, pass: String, rememberMe: Boolean): Result<UserEntity> {
+    suspend fun tryLoginFromPreferences(): Result<UserEntity?> {
         return withContext(Dispatchers.IO) {
-            val user = userDao.getByEmailOrUsername(identifier)
-            if (user != null && BCrypt.checkpw(pass, user.password)) {
-                _loggedInUserId.value = user.id
-
-                if (rememberMe) {
-                    userPreferences.saveUserIdentifier(identifier)
-                } else {
-                    userPreferences.clearUserIdentifier()
+            try {
+                val userId = userPreferences.activeUserIdFlow.firstOrNull()
+                if (userId == null) {
+                    return@withContext Result.success(null)
                 }
-                Result.success(user)
-            } else {
-                Result.failure(Exception("Credenciales inválidas"))
+
+                val user = userDao.getUserById(userId)
+                if (user != null) {
+                    _loggedInUserId.value = userId
+                    Result.success(user)
+                } else {
+                    userPreferences.clearUserSession()
+                    userPreferences.clearUserIdentifier()
+                    Result.failure(Exception("Usuario no encontrado en la base de datos"))
+                }
+            } catch (e: Exception) {
+                userPreferences.clearUserSession()
+                userPreferences.clearUserIdentifier()
+                Result.failure(e)
             }
         }
     }
 
-    suspend fun tryLoginFromPreferences(): Result<UserEntity?> {
-        val savedIdentifier = userPreferences.savedIdentifierFlow.firstOrNull()
-            ?: return Result.success(null)
-
+    suspend fun login(identifier: String, pass: String, rememberMe: Boolean): Result<UserEntity> {
         return withContext(Dispatchers.IO) {
-            val user = userDao.getByEmailOrUsername(savedIdentifier)
-            if (user != null) {
+            try {
+                val user = userDao.getByEmailOrUsername(identifier)
+                    ?: return@withContext Result.failure(Exception("Usuario no encontrado"))
+
+                if (!BCrypt.checkpw(pass, user.password)) {
+                    return@withContext Result.failure(Exception("Contraseña incorrecta"))
+                }
+
                 _loggedInUserId.value = user.id
+
+                if (rememberMe) {
+                    userPreferences.saveUserSession(user.id)
+                } else {
+                    userPreferences.clearUserSession()
+                }
+
                 Result.success(user)
-            } else {
-                userPreferences.clearUserIdentifier()
-                Result.failure(Exception("Usuario guardado no encontrado en la base de datos."))
+            } catch (e: Exception) {
+                Result.failure(e)
             }
         }
     }
 
     suspend fun clearLoggedInUser() {
         _loggedInUserId.value = null
-        userPreferences.clearUserIdentifier()
     }
 
     suspend fun getLoggedInUser(): UserProfile? {
@@ -173,6 +188,25 @@ class UserRepository(
             )
 
             Result.success(nuevoUsuarioId)
+        }
+    }
+
+    suspend fun getByEmailOrUsername(identifier: String): UserEntity? {
+        return withContext(Dispatchers.IO) {
+            userDao.getByEmailOrUsername(identifier)
+        }
+    }
+
+    suspend fun createUser(user: UserEntity): Result<UserEntity> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val userId = userDao.insertUsuario(user)  // Cambiado de insertUser a insertUsuario
+                val createdUser = userDao.getUserById(userId)
+                    ?: throw Exception("Error al crear el usuario")
+                Result.success(createdUser)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         }
     }
 }

@@ -10,7 +10,7 @@
     <color name="white">#FFFFFFFF</color>
 
     <!-- Colores de la Marca SAFE Rescue -->
-    <color name="sr_primary_color">#20a3d8</color>
+    <color name="sr_primary_color">#1565C0</color>
     <color name="sr_secondary_color">#3a8dbc</color>
     <color name="sr_background_light">#D9D9D9</color>
 

@@ -1,10 +1,8 @@
-// Archivo: app/src/main/java/com/movil/saferescue/ui/screen/IncidenteScreen.kt
 package com.movil.saferescue.ui.screen
 
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.*import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,13 +25,16 @@ import com.movil.saferescue.R
 import com.movil.saferescue.data.local.incidente.IncidenteEstado
 import com.movil.saferescue.data.local.incidente.IncidentWithDetails
 import com.movil.saferescue.ui.components.ImagePickerDialog
+import com.movil.saferescue.ui.theme.SRBackgroundWhite
+import com.movil.saferescue.ui.theme.SRPrimaryBlue
 import com.movil.saferescue.ui.viewmodel.IncidentsViewModel
 
 @Composable
-fun IncidentsScreen(viewModel: IncidentsViewModel) {
+fun IncidentsScreen(
+    viewModel: IncidentsViewModel
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val editState by viewModel.editState.collectAsStateWithLifecycle()
-    // --- CORRECCIÓN 1: Obtener el ID del usuario actual desde la propiedad correcta ---
     val currentUserId by viewModel.currentUserId.collectAsStateWithLifecycle()
 
     if (editState.selectedIncident != null) {
@@ -43,34 +44,35 @@ fun IncidentsScreen(viewModel: IncidentsViewModel) {
         )
     }
 
-    Scaffold { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            if (state.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (state.incidentsWithDetails.isEmpty()) {
-                Text("No hay incidentes reportados.", modifier = Modifier.align(Alignment.Center))
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(state.incidentsWithDetails) { incidentDetails ->
-                        IncidentCard(
-                            incidentDetails = incidentDetails,
-                            currentUserId = currentUserId,
-                            formatDate = viewModel::formatDate,
-                            onTakeIncident = { viewModel.onTakeIncidentClicked(incidentDetails.incident.id) },
-                            onCloseIncident = { viewModel.onCloseIncidentClicked(incidentDetails.incident.id) },
-                            onEditIncident = { viewModel.onEditIncidentClicked(incidentDetails) }
-                        )
-                    }
+    // Ya no hay Scaffold. Box es el contenedor principal del contenido de la pantalla.
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (state.isLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else if (state.incidentsWithDetails.isEmpty()) {
+            Text("No hay incidentes reportados.", modifier = Modifier.align(Alignment.Center))
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(state.incidentsWithDetails) { incidentDetails ->
+                    IncidentCard(
+                        incidentDetails = incidentDetails,
+                        currentUserId = currentUserId,
+                        formatDate = viewModel::formatDate,
+                        onTakeIncident = { viewModel.onTakeIncidentClicked(incidentDetails.incident.id) },
+                        onCloseIncident = { viewModel.onCloseIncidentClicked(incidentDetails.incident.id) },
+                        onEditIncident = { viewModel.onEditIncidentClicked(incidentDetails) }
+                    )
                 }
             }
         }
     }
 }
 
+// El resto del archivo (IncidentCard, EditIncidentDialog) no necesita cambios.
+// ... (código de IncidentCard y EditIncidentDialog va aquí)
 @Composable
 fun IncidentCard(
     incidentDetails: IncidentWithDetails,
@@ -86,16 +88,16 @@ fun IncidentCard(
     val isResolved = incident.estado == IncidenteEstado.RESUELTO.name
     val isAssignedToOther = incident.estado == IncidenteEstado.ASIGNADO.name && incident.asignadoA != currentUserId
 
-    // --- CORRECCIÓN 2: Eliminar el `clickable` conflictivo de la tarjeta principal ---
     Card(
         modifier = Modifier.fillMaxWidth(),
-        // .clickable(onClick = onEditIncident), // <--- ESTA LÍNEA SE ELIMINÓ
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column {
-            // Imagen del incidente
             AsyncImage(
                 model = incidentDetails.photoUrl,
                 error = painterResource(id = R.drawable.default_incident),
@@ -106,12 +108,10 @@ fun IncidentCard(
                 contentScale = ContentScale.Crop
             )
 
-            // Contenido de la tarjeta
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Bloque de información del incidente (sin cambios)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val statusColor = when (incident.estado) {
                         IncidenteEstado.ASIGNADO.name -> Color(0xFFFFA726) // Naranja
@@ -148,13 +148,11 @@ fun IncidentCard(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- CORRECCIÓN 3: Reestructurar los botones con un Row ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Botón de acción principal (ocupa el espacio restante)
                     Box(modifier = Modifier.weight(1f)) {
                         when {
                             canBeTaken -> {
@@ -187,7 +185,6 @@ fun IncidentCard(
                         }
                     }
 
-                    // --- CORRECCIÓN 4: Añadir un botón "Editar" explícito ---
                     if (!isResolved) {
                         OutlinedButton(onClick = onEditIncident) {
                             Text("Editar")
@@ -226,6 +223,9 @@ fun EditIncidentDialog(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = SRBackgroundWhite
+            )
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -259,7 +259,6 @@ fun EditIncidentDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
-                            // Llama a la función corregida del ViewModel que guarda TODO
                             viewModel.onSaveChangesClicked(titulo, detalle, imageUri)
                         },
                         enabled = titulo.isNotBlank() && detalle.isNotBlank()

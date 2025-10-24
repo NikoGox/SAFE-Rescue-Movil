@@ -34,15 +34,9 @@ data class AlertasUiState(
 /**
  * ViewModel para gestionar la lógica y el estado de la pantalla de Alertas y de Chat.
  */
-// 3. RENOMBRADO DEL VIEWMODEL
 class MensajeViewModel(
-    // 4. RENOMBRADO DEL REPOSITORIO
     private val repository: MensajeRepository
 ) : ViewModel() {
-
-    // --- LÓGICA PARA LA PANTALLA DE ALERTAS ---
-
-    // 5. RENOMBRADO DEL STATEFLOW
     private val _alertasUiState = MutableStateFlow(AlertasUiState())
     val alertasUiState: StateFlow<AlertasUiState> = _alertasUiState.asStateFlow()
 
