@@ -2,12 +2,12 @@
 <project version="4">
   <component name="deploymentTargetSelector">
     <selectionStates>
-      <SelectionState runConfigName="app">
+      <SelectionState runConfigName="SAFE Rescue">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-10-24T00:15:46.689228200Z">
+        <DropdownSelection timestamp="2025-10-25T04:40:13.240560700Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=810009781815" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=X:\Android\Avd\Telefono_M.avd" />
             </handle>
           </Target>
         </DropdownSelection>

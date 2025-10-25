@@ -1,3 +1,13 @@
+❚❙❘ VERSIÓN 1.7
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se modificó completamente el AppTopBar para que el botón de Notificaciones expanda dentro de cualquier pantalla las Notificaciones. 
+├─• Se modificaron las tarjetas de notificaciones para adaptarlas al nuevo formato.
+├─• Se eliminaron las opciones de Incidentes, Chat y Notificaciones del AppDrawer.
+└─• Se agregó la opción de Crear Notificación en el AppDrawer.
+
+->>> Modificar estilo del AppDrawer.
+->>> Terminar de desarrollar la función de Incidentes.
+
 ❚❙❘ VERSIÓN 1.6
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se cambió la funcionalidad de "Recordarme": ahora permite mantener la sesión iniciada al reabrir la app (no solo recordar el usuario).

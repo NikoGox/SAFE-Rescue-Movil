@@ -12,17 +12,15 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 1.6
+### ❚❙❘ VERSIÓN 1.7
 
-> <br>• Se cambió la funcionalidad de "Recordarme": ahora permite mantener la sesión iniciada al reabrir la app (no solo recordar el usuario).
-> <br>• Se ajustó AuthViewModel y NavGraph para que la restauración de sesión y la navegación funcionen sin bucles ni conflictos.
-> <br>• Se corrigió un Scaffold que provocaba duplicado del AppTopBar y del BottomNavigationBar en el NavGraph.
-> <br>• Se mejoró el estilo de la pantalla de inicio de sesión: colores, espaciado y presentación para un inicio más agradable.
-> <br>• Se actualizaron los colores del TopBar y del BottomNavigationBar a los colores de la marca.
-> <br>• Se unificó la instancia del AuthViewModel entre NavGraph y la pantalla de login para evitar estados desincronizados.
-> <br>• Archivos modificados verificados; prueba: login SIN “Recordarme” (debe volver al login al reiniciar) y CON “Recordarme” (debe mantenerse la sesión).
+> <br>• Se modificó completamente el AppTopBar para que el botón de Notificaciones expanda dentro de cualquier pantalla las Notificaciones. 
+> <br>• Se modificaron las tarjetas de notificaciones para adaptarlas al nuevo formato.
+> <br>• Se eliminaron las opciones de Incidentes, Chat y Notificaciones del AppDrawer.
+> <br>• Se agregó la opción de Crear Notificación en el AppDrawer. 
+> <br> > > > Modificar estilo del AppDrawer.
 > <br> > > > Terminar de desarrollar la función de Incidentes.
-> <br> > > > Mejorar barra de notificaciones y agregar logica de creacion de notificaciones solo para el administrador.
+> <br>
 
 ---
 

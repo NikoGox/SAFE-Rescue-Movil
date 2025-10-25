@@ -132,17 +132,20 @@ class AuthViewModel(
             try {
                 _login.update { it.copy(isSubmitting = true, errorMsg = null) }
 
+                val user = userRepository.getByEmailOrUsername(s.identifier)
+                if (user == null) {
+                    _login.update { it.copy(isSubmitting = false, errorMsg = "Usuario no encontrado") }
+                    return@launch
+                }
+
                 val result = userRepository.login(s.identifier, s.pass, rememberMe)
                 result.fold(
-                    onSuccess = { user ->
-                        // Primero establecemos el estado de autenticación
+                    onSuccess = { loggedInUser ->
                         _isAuthenticated.value = true
-                        // Luego manejamos la persistencia si es necesario
                         if (rememberMe) {
-                            userPreferences.saveUserSession(user.id)
+                            userPreferences.saveUserSession(loggedInUser.id)
                             userPreferences.saveUserIdentifier(s.identifier)
                         }
-                        // Finalmente actualizamos el estado del login
                         _login.update { it.copy(success = true, isSubmitting = false) }
                     },
                     onFailure = { e ->

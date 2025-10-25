@@ -13,9 +13,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.movil.saferescue.R
-import com.movil.saferescue.navigation.Route // <<< CORRECCIÓN: Importa tus rutas
+import com.movil.saferescue.navigation.Route
 
-// 1. Un modelo de datos más completo para cada ítem del menú.
 data class DrawerMenuItem(
     val route: String,
     val label: String,
@@ -25,17 +24,14 @@ data class DrawerMenuItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppDrawer(
-    currentRoute: String, // Recibe la ruta actual para saber cuál resaltar.
-    navigateTo: (String) -> Unit, // Una única función para navegar.
+    currentRoute: String,
+    navigateTo: (String) -> Unit,
     onLogout: () -> Unit,
-    isAuthenticated: Boolean // Todavía lo necesitamos para saber qué menú mostrar.
+    isAuthenticated: Boolean,
+    isAdmin: Boolean // Parámetro para saber si es admin
 ) {
-    // 2. Definimos las listas de menús aquí mismo. Mucho más limpio.
     val menuItemsForAuthenticated = listOf(
         DrawerMenuItem(Route.Home.path, "Inicio", Icons.Default.Home),
-        DrawerMenuItem(Route.Incidente.path, "Incidentes", Icons.Default.Report),
-        DrawerMenuItem(Route.Chat.path, "Chat", Icons.Default.Chat),
-        DrawerMenuItem(Route.Notification.path, "Notificaciones", Icons.Default.Notifications),
         DrawerMenuItem(Route.Profile.path, "Mi Perfil", Icons.Default.AccountCircle)
     )
 
@@ -45,7 +41,6 @@ fun AppDrawer(
     )
 
     ModalDrawerSheet {
-        // Encabezado (sin cambios)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -68,27 +63,36 @@ fun AppDrawer(
         Divider()
         Spacer(Modifier.height(12.dp))
 
-        // 3. Lógica mucho más simple para mostrar los menús.
         val itemsToShow = if (isAuthenticated) menuItemsForAuthenticated else menuItemsForGuest
 
         itemsToShow.forEach { item ->
             NavigationDrawerItem(
                 icon = { Icon(item.icon, contentDescription = item.label) },
                 label = { Text(item.label) },
-                // El ítem se marca como seleccionado si su ruta coincide con la actual.
                 selected = item.route == currentRoute,
-                onClick = { navigateTo(item.route) } // La acción es siempre la misma: navegar.
+                onClick = { navigateTo(item.route) }
             )
         }
 
-        // El ítem de Logout se maneja por separado si el usuario está autenticado.
         if (isAuthenticated) {
+            // Opción exclusiva para administradores
+            if (isAdmin) {
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.AddAlert, contentDescription = "Crear Notificación") },
+                    label = { Text("Crear Notificación") },
+                    selected = currentRoute == Route.Notification.path,
+                    onClick = { navigateTo(Route.Notification.path) }
+                )
+            }
+
+            // Opción de cerrar sesión
             Divider(modifier = Modifier.padding(vertical = 8.dp))
             NavigationDrawerItem(
                 icon = { Icon(Icons.Default.Logout, contentDescription = "Cerrar Sesión") },
                 label = { Text("Cerrar Sesión") },
                 selected = false,
-                onClick = onLogout // El logout es una acción especial.
+                onClick = onLogout
             )
         }
     }

@@ -12,6 +12,8 @@ import com.movil.saferescue.data.local.incidente.IncidenteEntity
 import com.movil.saferescue.data.local.incidente.IncidenteEstado // <<< CORRECCIÓN 1: Importar el enum
 import com.movil.saferescue.data.local.mensaje.MensajeDao
 import com.movil.saferescue.data.local.mensaje.MensajeEntity
+import com.movil.saferescue.data.local.mensaje.MensajeUsuarioDao
+import com.movil.saferescue.data.local.mensaje.MensajeUsuarioEntity
 import com.movil.saferescue.data.local.mensaje.TipoMensajeDao
 import com.movil.saferescue.data.local.mensaje.TipoMensajeEntity
 import com.movil.saferescue.data.local.user.TipoPerfilDao
@@ -28,11 +30,12 @@ import org.mindrot.jbcrypt.BCrypt
         UserEntity::class,
         TipoPerfilEntity::class,
         MensajeEntity::class,
+        MensajeUsuarioEntity::class,
         TipoMensajeEntity::class,
         FotoEntity::class,
         IncidenteEntity::class
     ],
-    version = 18, // <<< CORRECCIÓN 2: Incrementar la versión a un nuevo número
+    version = 20, // <<< VERSIÓN INCREMENTADA
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -40,6 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun tipoPerfilDao(): TipoPerfilDao
     abstract fun mensajeDao(): MensajeDao
+    abstract fun mensajeUsuarioDao(): MensajeUsuarioDao
     abstract fun tipoMensajeDao(): TipoMensajeDao
     abstract fun fotoDao(): FotoDao
     abstract fun incidenteDao(): IncidenteDao
@@ -55,7 +59,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "saferescue_database"
                 )
-                    .fallbackToDestructiveMigration() // <<< CORRECCIÓN 3: La solución al crash
+                    .fallbackToDestructiveMigration()
                     .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
@@ -94,7 +98,7 @@ abstract class AppDatabase : RoomDatabase() {
             )
             fotoDao.insertAll(seedFoto)
 
-            // ... (el resto de tu seeding de fotos, perfiles, usuarios, etc. está bien)
+            // ... (el resto del seeding permanece sin cambios)
 
             val seedTipoPerfil = listOf(
                 TipoPerfilEntity(rol = "Administrador", detalle = "Acceso total"), // ID 1
@@ -118,7 +122,6 @@ abstract class AppDatabase : RoomDatabase() {
             )
             userDao.insertAll(seedUser)
 
-            // <<< CORRECCIÓN 4: Añadir valores por defecto a los nuevos campos en el seeding >>>
             val seedIncidente = listOf(
                 IncidenteEntity(titulo = "Incendio en Colegio", detalle = "Se reporta un incendio de rápida propagación...", foto_id = 4, estado = IncidenteEstado.ACTIVO.name, asignadoA = null),
                 IncidenteEntity(titulo = "Rescate en Estructura Colapsada", detalle = "Estructura de casa antigua colapsó...", foto_id = 6, estado = IncidenteEstado.ACTIVO.name, asignadoA = null),

@@ -32,9 +32,10 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    // Ahora la factory de MensajeViewModel necesita UserRepository además de MensajeRepository
     private val mensajeViewModelFactory by lazy {
         val appContainer = application as SafeRescueApplication
-        MensajeViewModelFactory(appContainer.mensajeRepository)
+        MensajeViewModelFactory(appContainer.mensajeRepository, appContainer.userRepository)
     }
 
     private val incidenteViewModelFactory by lazy {
