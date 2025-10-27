@@ -1,4 +1,3 @@
-// Archivo: app/src/main/java/com/movil/saferescue/ui/viewmodel/IncidentsViewModel.kt
 package com.movil.saferescue.ui.viewmodel
 
 import android.content.Context
@@ -7,6 +6,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.movil.saferescue.data.local.foto.FotoEntity
+import com.movil.saferescue.data.local.incidente.IncidenteEntity
+import com.movil.saferescue.data.local.incidente.IncidenteEstado
 import com.movil.saferescue.data.local.incidente.IncidentWithDetails
 import com.movil.saferescue.data.repository.IncidenteRepository
 import com.movil.saferescue.data.repository.UserRepository
@@ -23,24 +24,27 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// Estado para la lista principal de incidentes
 data class IncidentsUiState(
     val isLoading: Boolean = true,
     val incidentsWithDetails: List<IncidentWithDetails> = emptyList(),
     val error: String? = null
 )
 
-// Estado para el diálogo de edición
 data class EditIncidentState(
     val selectedIncident: IncidentWithDetails? = null,
-    // El newImageUri ya no es necesario aquí, se pasa como parámetro
     val isSubmitting: Boolean = false,
     val error: String? = null
 )
 
-class IncidentsViewModel(
+data class CreateIncidentState(
+    val isCreating: Boolean = false,
+    val createSuccess: Boolean = false,
+    val error: String? = null
+)
+
+class IncidenteViewModel(
     private val repository: IncidenteRepository,
-    private val userRepository: UserRepository, // Inyecta el repo de usuario
+    private val userRepository: UserRepository, 
     private val applicationContext: Context
 ) : ViewModel() {
 
@@ -50,7 +54,9 @@ class IncidentsViewModel(
     private val _editState = MutableStateFlow(EditIncidentState())
     val editState: StateFlow<EditIncidentState> = _editState.asStateFlow()
 
-    // Correcto: El ViewModel obtiene el ID del usuario del UserRepository.
+    private val _createState = MutableStateFlow(CreateIncidentState())
+    val createState: StateFlow<CreateIncidentState> = _createState.asStateFlow()
+
     val currentUserId: StateFlow<Long?> = userRepository.loggedInUserId
 
     init {
@@ -65,12 +71,76 @@ class IncidentsViewModel(
         }
     }
 
-    // --- ACCIONES DEL USUARIO ---
+    fun crearIncidente(
+        titulo: String,
+        detalle: String,
+        imageUri: Uri?,
+        latitud: String,
+        longitud: String,
+        comuna: String,
+        region: String,
+        direccion: String
+    ) {
+        if (titulo.length !in 10..30) {
+            _createState.update { it.copy(error = "El título debe tener entre 10 y 30 caracteres.") }
+            return
+        }
+        if (detalle.length !in 10..100) {
+            _createState.update { it.copy(error = "El detalle debe tener entre 10 y 100 caracteres.") }
+            return
+        }
+        val lat = latitud.toDoubleOrNull()
+        if (latitud.isNotBlank() && (lat == null || latitud.length > 15)) {
+            _createState.update { it.copy(error = "La latitud ingresada no es válida.") }
+            return
+        }
+        val lon = longitud.toDoubleOrNull()
+        if (longitud.isNotBlank() && (lon == null || longitud.length > 15)) {
+            _createState.update { it.copy(error = "La longitud ingresada no es válida.") }
+            return
+        }
+        if (region.isEmpty()) {
+            _createState.update { it.copy(error = "Debe seleccionar una región.") }
+            return
+        }
+        if (comuna.isNotBlank() && comuna.length !in 2..20) {
+            _createState.update { it.copy(error = "La comuna debe tener entre 2 y 20 caracteres.") }
+            return
+        }
+        if (direccion.isNotBlank() && direccion.length !in 5..30) {
+            _createState.update { it.copy(error = "La dirección debe tener entre 5 y 30 caracteres.") }
+            return
+        }
 
-    // 1. Tomar un incidente
+        viewModelScope.launch {
+            _createState.update { it.copy(isCreating = true, createSuccess = false, error = null) }
+            try {
+                val photoId = imageUri?.let { saveImageAndGetId(it) }
+                val incidente = IncidenteEntity(
+                    titulo = titulo,
+                    detalle = detalle,
+                    foto_id = photoId,
+                    latitud = lat,
+                    longitud = lon,
+                    comuna = comuna.takeIf { it.isNotBlank() },
+                    region = region.takeIf { it.isNotBlank() },
+                    direccion = direccion.takeIf { it.isNotBlank() }
+                )
+                repository.insertIncidente(incidente)
+                _createState.update { it.copy(isCreating = false, createSuccess = true) }
+            } catch (e: Exception) {
+                _createState.update { it.copy(isCreating = false, error = "Error al crear el incidente: ${e.message}") }
+            }
+        }
+    }
+
+    fun onCreationHandled() {
+        _createState.value = CreateIncidentState()
+    }
+
     fun onTakeIncidentClicked(incidentId: Long) {
         viewModelScope.launch {
-            val userId = currentUserId.value // Obtiene el valor actual del Flow
+            val userId = currentUserId.value
             if (userId != null) {
                 repository.takeIncident(incidentId, userId)
             } else {
@@ -79,39 +149,26 @@ class IncidentsViewModel(
         }
     }
 
-    // 2. Cerrar un incidente
     fun onCloseIncidentClicked(incidenteId: Long) {
         viewModelScope.launch {
             try {
                 repository.closeIncident(incidenteId)
-                // La UI se actualiza automáticamente gracias al Flow
             } catch (e: Exception) {
-                Log.e("IncidentsViewModel", "Error al cerrar el incidente: ${e.message}")
+                Log.e("IncidenteViewModel", "Error al cerrar el incidente: ${e.message}")
                 _uiState.update { it.copy(error = "Error al cerrar el incidente.") }
             }
         }
     }
 
-    // 3. Abrir el diálogo para editar
     fun onEditIncidentClicked(incident: IncidentWithDetails) {
         _editState.value = EditIncidentState(selectedIncident = incident)
     }
 
-    // 4. Cerrar el diálogo
     fun onDismissDialog() {
-        _editState.value = EditIncidentState() // Resetea el estado para ocultar el diálogo
+        _editState.value = EditIncidentState()
     }
 
-    // --- INICIO DE LA CORRECCIÓN ---
-
-    /**
-     * 5. Guardar todos los cambios del diálogo de edición (título, detalle e imagen).
-     *
-     * @param newTitle El nuevo título del incidente.
-     * @param newDetail El nuevo detalle del incidente.
-     * @param newImageUri La nueva URI de la imagen (opcional).
-     */
-    fun onSaveChangesClicked(newTitle: String, newDetail: String, newImageUri: Uri?) {
+    fun onSaveChangesClicked(newTitle: String, newDetail: String, newImageUri: Uri?, bomberoUsername: String?) {
         viewModelScope.launch {
             val currentEditState = _editState.value
             val incidentToUpdate = currentEditState.selectedIncident?.incident ?: return@launch
@@ -119,47 +176,45 @@ class IncidentsViewModel(
             _editState.update { it.copy(isSubmitting = true) }
 
             try {
-                // Paso 1: Si hay una nueva imagen, guardarla y obtener su ID.
-                // Si no, se mantiene el ID de la foto anterior.
+                val bomberoId = bomberoUsername?.let { username ->
+                    val user = userRepository.getUserByUsername(username)
+                    if (user?.rol_id == 2L) { 
+                        user.id
+                    } else {
+                        null
+                    }
+                }
+
                 val newPhotoId = if (newImageUri != null) {
                     saveImageAndGetId(newImageUri)
                 } else {
                     incidentToUpdate.foto_id
                 }
 
-                // Paso 2: Crear una copia del incidente con TODOS los datos actualizados.
                 val updatedIncident = incidentToUpdate.copy(
                     titulo = newTitle,
                     detalle = newDetail,
-                    foto_id = newPhotoId
+                    foto_id = newPhotoId,
+                    asignadoA = bomberoId ?: incidentToUpdate.asignadoA, 
+                    estado = if (bomberoId != null) IncidenteEstado.ASIGNADO.name else incidentToUpdate.estado
                 )
 
-                // Paso 3: Llamar a un método genérico para actualizar el incidente en el repositorio.
                 repository.updateIncidente(updatedIncident)
 
-                // Paso 4: Cerrar el diálogo al terminar con éxito.
                 onDismissDialog()
 
             } catch (e: Exception) {
-                Log.e("IncidentsViewModel", "Error al guardar cambios: ${e.message}")
+                Log.e("IncidenteViewModel", "Error al guardar cambios: ${e.message}")
                 _editState.update { it.copy(isSubmitting = false, error = "No se pudo guardar los cambios.") }
             }
         }
     }
-    // --- FIN DE LA CORRECCIÓN ---
 
-
-    /**
-     * Guarda un archivo de imagen desde una URI, lo inserta en la BBDD y devuelve su ID.
-     * Se hace 'private suspend' porque solo se usa dentro de este ViewModel.
-     * Throws Exception on failure.
-     */
     private suspend fun saveImageAndGetId(uri: Uri): Long {
         return withContext(Dispatchers.IO) {
             val fileName = "INCIDENT_${System.currentTimeMillis()}.jpg"
             val destinationFile = File(applicationContext.filesDir, fileName)
 
-            // Usamos 'use' para garantizar que los streams se cierren automáticamente
             applicationContext.contentResolver.openInputStream(uri)?.use { input ->
                 FileOutputStream(destinationFile).use { output ->
                     input.copyTo(output)
@@ -171,9 +226,6 @@ class IncidentsViewModel(
         }
     }
 
-    /**
-     * Limpia un mensaje de error una vez que ha sido mostrado en la UI.
-     */
     fun onErrorShown() {
         _uiState.update { it.copy(error = null) }
         _editState.update { it.copy(error = null) }

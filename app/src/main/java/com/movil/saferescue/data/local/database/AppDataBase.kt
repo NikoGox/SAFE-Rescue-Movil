@@ -9,7 +9,7 @@ import com.movil.saferescue.data.local.foto.FotoDao
 import com.movil.saferescue.data.local.foto.FotoEntity
 import com.movil.saferescue.data.local.incidente.IncidenteDao
 import com.movil.saferescue.data.local.incidente.IncidenteEntity
-import com.movil.saferescue.data.local.incidente.IncidenteEstado // <<< CORRECCIÓN 1: Importar el enum
+import com.movil.saferescue.data.local.incidente.IncidenteEstado
 import com.movil.saferescue.data.local.mensaje.MensajeDao
 import com.movil.saferescue.data.local.mensaje.MensajeEntity
 import com.movil.saferescue.data.local.mensaje.MensajeUsuarioDao
@@ -35,7 +35,7 @@ import org.mindrot.jbcrypt.BCrypt
         FotoEntity::class,
         IncidenteEntity::class
     ],
-    version = 20, // <<< VERSIÓN INCREMENTADA
+    version = 23, // Incrementar versión para aplicar cambios
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -86,8 +86,6 @@ abstract class AppDatabase : RoomDatabase() {
             val mensajeDao = database.mensajeDao()
             val incidenteDao = database.incidenteDao()
 
-            // ---- Lógica de Inserción (Seeding) ----
-
             val seedFoto = listOf(
                 FotoEntity(nombre = "picsum_1.jpg", url = "https://picsum.photos/id/1/200"),
                 FotoEntity(nombre = "picsum_2.jpg", url = "https://picsum.photos/id/2/200"),
@@ -97,8 +95,6 @@ abstract class AppDatabase : RoomDatabase() {
                 FotoEntity(nombre = "rescate_estructura.jpg", url = "https://www.cooperativa.cl/noticias/site/artic/20230202/imag/foto_0000000220230202181635.jpg")
             )
             fotoDao.insertAll(seedFoto)
-
-            // ... (el resto del seeding permanece sin cambios)
 
             val seedTipoPerfil = listOf(
                 TipoPerfilEntity(rol = "Administrador", detalle = "Acceso total"), // ID 1
@@ -116,16 +112,17 @@ abstract class AppDatabase : RoomDatabase() {
 
             val seedUser = listOf(
                 UserEntity(name = "Admin", email = "a@a.cl", phone = "12345678", password = BCrypt.hashpw("Admin123!", BCrypt.gensalt()), run = "13333333", dv = "3", username = "Admin", rol_id = 1, foto_id = 1),
-                UserEntity(name = "Jose Milan", email = "b@b.cl", phone = "456891011", password = BCrypt.hashpw("Jose123!", BCrypt.gensalt()) , run = "2356789", dv = "0", username = "Josesito", rol_id = 2, foto_id = 2),
-                UserEntity(name = "Maria Juana", email = "c@c.cl", phone = "789101112", password = BCrypt.hashpw("Maria123!", BCrypt.gensalt()), run = "11222333", dv = "4", username = "Mari", rol_id = 3, foto_id = 3),
-                UserEntity(name = "Agente de Soporte", email = "soporte@safe.cl", phone = "44444444", password = BCrypt.hashpw("Soporte123!", BCrypt.gensalt()), run = "9666666", dv = "K", username = "Soporte", rol_id = 4, foto_id = 1)
+                UserEntity(name = "Jose Milan", email = "b@b.cl", phone = "456891011", password = BCrypt.hashpw("Admin123!", BCrypt.gensalt()) , run = "20356789", dv = "0", username = "Josesito", rol_id = 2, foto_id = 2),
+                UserEntity(name = "Ruben P", email = "k@k.cl", phone = "22345678", password = BCrypt.hashpw("Admin123!", BCrypt.gensalt()), run = "14444444", dv = "4", username = "nikogox", rol_id = 3, foto_id = 1),
+                UserEntity(name = "Maria Gonzales", email = "c@c.cl", phone = "789101112", password = BCrypt.hashpw("Admin123!", BCrypt.gensalt()), run = "11222333", dv = "4", username = "Mari", rol_id = 3, foto_id = 3),
+                UserEntity(name = "Agente de Soporte", email = "soporte@safe.cl", phone = "44444444", password = BCrypt.hashpw("Admin123!", BCrypt.gensalt()), run = "9666666", dv = "K", username = "Soporte", rol_id = 4, foto_id = 1)
             )
             userDao.insertAll(seedUser)
 
             val seedIncidente = listOf(
-                IncidenteEntity(titulo = "Incendio en Colegio", detalle = "Se reporta un incendio de rápida propagación...", foto_id = 4, estado = IncidenteEstado.ACTIVO.name, asignadoA = null),
-                IncidenteEntity(titulo = "Rescate en Estructura Colapsada", detalle = "Estructura de casa antigua colapsó...", foto_id = 6, estado = IncidenteEstado.ACTIVO.name, asignadoA = null),
-                IncidenteEntity(titulo = "Accidente Vehicular Múltiple", detalle = "Colisión de 3 vehículos en la Ruta 68...", foto_id = 5, estado = IncidenteEstado.ASIGNADO.name, asignadoA = 2L) // Asignado a Jose Milan (ID 2)
+                IncidenteEntity(titulo = "Incendio en Colegio", detalle = "Se reporta un incendio de rápida propagación...", foto_id = 4, estado = IncidenteEstado.ACTIVO.name, asignadoA = null, latitud = -33.04, longitud = -71.61, comuna = "Valparaíso", region = "Valparaíso", direccion = "Av. Argentina 123"),
+                IncidenteEntity(titulo = "Rescate en Estructura Colapsada", detalle = "Estructura de casa antigua colapsó...", foto_id = 6, estado = IncidenteEstado.ACTIVO.name, asignadoA = null, latitud = -33.44, longitud = -70.65, comuna = "Santiago", region = "Metropolitana", direccion = "Calle Falsa 123"),
+                IncidenteEntity(titulo = "Accidente Vehicular Múltiple", detalle = "Colisión de 3 vehículos en la Ruta 68...", foto_id = 5, estado = IncidenteEstado.ASIGNADO.name, asignadoA = 2L, latitud = -33.25, longitud = -71.21, comuna = "Curacaví", region = "Metropolitana", direccion = "Ruta 68, km 50") // Asignado a Jose Milan (ID 2)
             )
             incidenteDao.insertAll(seedIncidente)
 

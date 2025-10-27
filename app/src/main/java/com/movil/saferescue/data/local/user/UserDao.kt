@@ -24,7 +24,7 @@ interface UserDao {
      * Obtiene un usuario por su nombre de usuario (username).
      */
     @Query("SELECT * FROM users WHERE username = :username LIMIT 1")
-    suspend fun getByUsername(username: String): UserEntity? // <-- FUNCIÓN AÑADIDA
+    suspend fun getByUsername(username: String): UserEntity?
 
     /**
      * Obtiene un usuario por su email o por su nombre de usuario.
@@ -35,7 +35,6 @@ interface UserDao {
 
     /**
      * Actualiza únicamente el ID de la foto de un usuario específico.
-     * Esta es la función que faltaba para la lógica de cambio de foto de perfil.
      */
     @Query("UPDATE users SET foto_id = :newPhotoId WHERE id = :userId")
     suspend fun updateUserPhotoId(userId: Long, newPhotoId: Long)
@@ -91,5 +90,3 @@ interface UserDao {
     suspend fun getUserProfileById(userId: Long): UserProfile?
 
 }
-
-

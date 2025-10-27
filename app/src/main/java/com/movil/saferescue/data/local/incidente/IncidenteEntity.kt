@@ -48,5 +48,12 @@ data class IncidenteEntity(
     val estado: String = IncidenteEstado.ACTIVO.name,
 
     @ColumnInfo(name = "asignado_a_user_id")
-    val asignadoA: Long? = null // ID del usuario que tomó el incidente.
+    val asignadoA: Long? = null, // ID del usuario que tomó el incidente.
+
+    // Nuevos campos de ubicación
+    val latitud: Double?,
+    val longitud: Double?,
+    val comuna: String?,
+    val region: String?,
+    val direccion: String?
 )

@@ -2,15 +2,14 @@ package com.movil.saferescue.ui.screen
 
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.*import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,12 +25,13 @@ import com.movil.saferescue.data.local.incidente.IncidenteEstado
 import com.movil.saferescue.data.local.incidente.IncidentWithDetails
 import com.movil.saferescue.ui.components.ImagePickerDialog
 import com.movil.saferescue.ui.theme.SRBackgroundWhite
-import com.movil.saferescue.ui.theme.SRPrimaryBlue
-import com.movil.saferescue.ui.viewmodel.IncidentsViewModel
+import com.movil.saferescue.ui.viewmodel.IncidenteViewModel
 
 @Composable
-fun IncidentsScreen(
-    viewModel: IncidentsViewModel
+fun IncidenteScreen(
+    viewModel: IncidenteViewModel,
+    isAdmin: Boolean,
+    isBombero: Boolean
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val editState by viewModel.editState.collectAsStateWithLifecycle()
@@ -40,11 +40,11 @@ fun IncidentsScreen(
     if (editState.selectedIncident != null) {
         EditIncidentDialog(
             viewModel = viewModel,
-            onDismiss = viewModel::onDismissDialog
+            onDismiss = viewModel::onDismissDialog,
+            isAdmin = isAdmin
         )
     }
 
-    // Ya no hay Scaffold. Box es el contenedor principal del contenido de la pantalla.
     Box(modifier = Modifier.fillMaxSize()) {
         if (state.isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -63,7 +63,9 @@ fun IncidentsScreen(
                         formatDate = viewModel::formatDate,
                         onTakeIncident = { viewModel.onTakeIncidentClicked(incidentDetails.incident.id) },
                         onCloseIncident = { viewModel.onCloseIncidentClicked(incidentDetails.incident.id) },
-                        onEditIncident = { viewModel.onEditIncidentClicked(incidentDetails) }
+                        onEditIncident = { viewModel.onEditIncidentClicked(incidentDetails) },
+                        isAdmin = isAdmin,
+                        isBombero = isBombero
                     )
                 }
             }
@@ -71,8 +73,6 @@ fun IncidentsScreen(
     }
 }
 
-// El resto del archivo (IncidentCard, EditIncidentDialog) no necesita cambios.
-// ... (código de IncidentCard y EditIncidentDialog va aquí)
 @Composable
 fun IncidentCard(
     incidentDetails: IncidentWithDetails,
@@ -80,31 +80,35 @@ fun IncidentCard(
     formatDate: (Long) -> String,
     onTakeIncident: () -> Unit,
     onCloseIncident: () -> Unit,
-    onEditIncident: () -> Unit
+    onEditIncident: () -> Unit,
+    isAdmin: Boolean,
+    isBombero: Boolean
 ) {
     val incident = incidentDetails.incident
-    val canBeTaken = incident.estado == IncidenteEstado.ACTIVO.name
+    val canBeTaken = incident.estado == IncidenteEstado.ACTIVO.name && isBombero
     val canBeClosed = incident.estado == IncidenteEstado.ASIGNADO.name && incident.asignadoA == currentUserId
     val isResolved = incident.estado == IncidenteEstado.RESUELTO.name
     val isAssignedToOther = incident.estado == IncidenteEstado.ASIGNADO.name && incident.asignadoA != currentUserId
+
+    val fullAddress = listOfNotNull(
+        incidentDetails.incident.direccion,
+        incidentDetails.incident.comuna,
+        incidentDetails.incident.region
+    ).joinToString(", ").ifEmpty { "Dirección no encontrada" }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column {
             AsyncImage(
                 model = incidentDetails.photoUrl,
                 error = painterResource(id = R.drawable.default_incident),
                 contentDescription = "Imagen del Incidente",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
+                modifier = Modifier.fillMaxWidth().height(250.dp),
                 contentScale = ContentScale.Crop
             )
 
@@ -114,9 +118,9 @@ fun IncidentCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val statusColor = when (incident.estado) {
-                        IncidenteEstado.ASIGNADO.name -> Color(0xFFFFA726) // Naranja
-                        IncidenteEstado.RESUELTO.name -> Color(0xFF4CAF50) // Verde
-                        else -> MaterialTheme.colorScheme.error // Rojo para ACTIVO
+                        IncidenteEstado.ASIGNADO.name -> Color(0xFFFFA726)
+                        IncidenteEstado.RESUELTO.name -> Color(0xFF4CAF50)
+                        else -> MaterialTheme.colorScheme.error
                     }
                     Icon(
                         imageVector = Icons.Default.Warning,
@@ -132,6 +136,7 @@ fun IncidentCard(
                     )
                 }
                 Text(incident.titulo, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(text = fullAddress, style = MaterialTheme.typography.labelMedium)
                 Text(
                     text = "Reportado el: ${formatDate(incident.fechaRegistro)}",
                     style = MaterialTheme.typography.bodySmall,
@@ -169,7 +174,7 @@ fun IncidentCard(
                                     Text("Cerrar Incidente")
                                 }
                             }
-                            isAssignedToOther -> {
+                            isAssignedToOther && isBombero -> {
                                 Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
                                     Text("Ya asignado")
                                 }
@@ -185,7 +190,7 @@ fun IncidentCard(
                         }
                     }
 
-                    if (!isResolved) {
+                    if (!isResolved && isAdmin) {
                         OutlinedButton(onClick = onEditIncident) {
                             Text("Editar")
                         }
@@ -198,13 +203,15 @@ fun IncidentCard(
 
 @Composable
 fun EditIncidentDialog(
-    viewModel: IncidentsViewModel,
-    onDismiss: () -> Unit
+    viewModel: IncidenteViewModel,
+    onDismiss: () -> Unit,
+    isAdmin: Boolean
 ) {
     val editState by viewModel.editState.collectAsStateWithLifecycle()
     val incident = editState.selectedIncident?.incident ?: return
     var titulo by remember { mutableStateOf(incident.titulo) }
     var detalle by remember { mutableStateOf(incident.detalle) }
+    var bomberoUsername by remember { mutableStateOf("") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var showImageDialog by remember { mutableStateOf(false) }
 
@@ -223,9 +230,7 @@ fun EditIncidentDialog(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = SRBackgroundWhite
-            )
+            colors = CardDefaults.cardColors(containerColor = SRBackgroundWhite)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -245,6 +250,15 @@ fun EditIncidentDialog(
                     modifier = Modifier.fillMaxWidth().height(120.dp)
                 )
 
+                if (isAdmin) {
+                    OutlinedTextField(
+                        value = bomberoUsername,
+                        onValueChange = { bomberoUsername = it },
+                        label = { Text("Asignar a Bombero (username)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
                 Button(onClick = { showImageDialog = true }) {
                     Text(if (imageUri == null) "Cambiar Imagen" else "Imagen Seleccionada ✓")
                 }
@@ -259,7 +273,7 @@ fun EditIncidentDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
-                            viewModel.onSaveChangesClicked(titulo, detalle, imageUri)
+                            viewModel.onSaveChangesClicked(titulo, detalle, imageUri, bomberoUsername.takeIf { it.isNotBlank() })
                         },
                         enabled = titulo.isNotBlank() && detalle.isNotBlank()
                     ) {

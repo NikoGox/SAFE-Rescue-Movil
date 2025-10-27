@@ -1,12 +1,12 @@
 package com.movil.saferescue.data.repository
 
+import android.net.Uri
 import com.movil.saferescue.data.local.foto.FotoDao
 import com.movil.saferescue.data.local.foto.FotoEntity
 import com.movil.saferescue.data.local.storage.UserPreferences
 import com.movil.saferescue.data.local.user.UserDao
 import com.movil.saferescue.data.local.user.UserEntity
 import com.movil.saferescue.data.local.user.UserProfile
-import com.movil.saferescue.domain.validation.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,14 +19,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * Repositorio para manejar los datos de los usuarios.
- * Delega la lógica de DataStore a `UserPreferences`.
- *
- * @param userDao DAO para operaciones de usuario en la base de datos.
- * @param fotoDao DAO para operaciones de fotos.
- * @param userPreferences Clase que gestiona las preferencias del usuario en DataStore.
- */
 class UserRepository(
     private val userDao: UserDao,
     private val fotoDao: FotoDao,
@@ -66,7 +58,7 @@ class UserRepository(
     suspend fun login(identifier: String, pass: String, rememberMe: Boolean): Result<UserEntity> {
         return withContext(Dispatchers.IO) {
             try {
-                val user = userDao.getByEmailOrUsername(identifier)
+                val user = userDao.getByEmail(identifier) ?: userDao.getByUsername(identifier)
                     ?: return@withContext Result.failure(Exception("Usuario no encontrado"))
 
                 if (!BCrypt.checkpw(pass, user.password)) {
@@ -100,7 +92,6 @@ class UserRepository(
     }
 
     suspend fun updateUser(user: UserEntity): Result<Unit> {
-        // La validación se hace en el ViewModel, aquí solo se actualiza.
         return withContext(Dispatchers.IO) {
             try {
                 userDao.updateUser(user)
@@ -111,11 +102,6 @@ class UserRepository(
         }
     }
 
-    // <<< FUNCIÓN NUEVA: Para actualizar solo el ID de la foto del usuario >>>
-    /**
-     * Actualiza el 'foto_id' de un usuario específico.
-     * Esta función es llamada desde el ViewModel después de guardar una nueva imagen.
-     */
     suspend fun updateUserPhoto(userId: Long, newPhotoId: Long): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
@@ -127,14 +113,30 @@ class UserRepository(
         }
     }
 
+    suspend fun changeUserProfilePicture(userId: Long, imageUri: Uri): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                val fileName = "IMG_${timeStamp}.jpg"
+                val newFoto = FotoEntity(
+                    nombre = fileName,
+                    url = imageUri.toString()
+                )
+
+                val newPhotoId = fotoDao.insertFoto(newFoto)
+
+                userDao.updateUserPhotoId(userId, newPhotoId)
+
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
 
     fun setLoggedInUserId(userId: Long) {
         _loggedInUserId.value = userId
     }
-
-    // <<< CÓDIGO OBSOLETO ELIMINADO >>>
-    // La función 'getFotoUrlById' ya no es necesaria, ya que 'getLoggedInUser' devuelve
-    // un 'UserProfile' que ya contiene la URL de la foto.
 
     suspend fun register(
         name: String,
@@ -155,14 +157,12 @@ class UserRepository(
                 return@withContext Result.failure(IllegalArgumentException("Nombre de usuario ya en uso"))
             }
 
-            // <<< LÓGICA CORREGIDA: Se adapta a la nueva entidad FotoEntity >>>
             val fotoExistente = fotoDao.getByUrl(fotoUrl)
             val fotoId: Long
 
             if (fotoExistente != null) {
                 fotoId = fotoExistente.id
             } else {
-                // Si la foto por defecto no existe, la creamos con el nuevo formato
                 val fileName = "DEFAULT_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())}.jpg"
                 fotoId = fotoDao.insertFoto(
                     FotoEntity(
@@ -191,16 +191,28 @@ class UserRepository(
         }
     }
 
+    suspend fun getUserByUsername(username: String): UserEntity? {
+        return withContext(Dispatchers.IO) {
+            userDao.getByUsername(username)
+        }
+    }
+
     suspend fun getByEmailOrUsername(identifier: String): UserEntity? {
         return withContext(Dispatchers.IO) {
-            userDao.getByEmailOrUsername(identifier)
+            userDao.getByEmail(identifier) ?: userDao.getByUsername(identifier)
+        }
+    }
+
+    suspend fun getUserById(userId: Long): UserEntity? {
+        return withContext(Dispatchers.IO) {
+            userDao.getUserById(userId)
         }
     }
 
     suspend fun createUser(user: UserEntity): Result<UserEntity> {
         return withContext(Dispatchers.IO) {
             try {
-                val userId = userDao.insertUsuario(user)  // Cambiado de insertUser a insertUsuario
+                val userId = userDao.insertUsuario(user)
                 val createdUser = userDao.getUserById(userId)
                     ?: throw Exception("Error al crear el usuario")
                 Result.success(createdUser)

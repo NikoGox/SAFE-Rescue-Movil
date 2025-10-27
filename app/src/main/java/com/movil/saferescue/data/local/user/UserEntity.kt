@@ -56,7 +56,6 @@ data class UserProfile(
     val dv: String,
     val fotoUrl: String?,
     val rolName: String,
-    val fotoId: Long,
-    val rolId: Long
+    val fotoId: Long?,
+    val rolId: Long?
 )
-

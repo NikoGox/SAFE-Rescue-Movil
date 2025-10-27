@@ -131,4 +131,17 @@ class MensajeViewModel(
             }
         }
         .stateIn(viewModelScope, SharingStarted.Lazily, false)
+
+    val isCurrentUserBombero: Flow<Boolean> = userRepository.loggedInUserId
+        .flatMapLatest { userId ->
+            if (userId == null) {
+                flowOf(false)
+            } else {
+                flow {
+                    val profile = userRepository.getLoggedInUser()
+                    emit(profile?.rolId == 2L)
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, false)
 }

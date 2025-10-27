@@ -11,8 +11,9 @@ import com.movil.saferescue.data.local.user.UserProfile
 import com.movil.saferescue.data.repository.UserRepository
 import com.movil.saferescue.domain.validation.validateChileanRUN
 import com.movil.saferescue.domain.validation.validateNameLettersOnly
-import com.movil.saferescue.domain.validation.validatePhoneDigitsOnly
+import com.movil.saferescue.domain.validation.validatePhoneExactNine
 import com.movil.saferescue.domain.validation.validateUsername
+import com.movil.saferescue.domain.validation.validateRolName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-// <<< IMPORT ADICIONAL para generar el nombre de archivo con fecha
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -47,7 +47,8 @@ data class ProfileUiState(
     val canSave: Boolean = false,
     val isSubmitting: Boolean = false,
     val successMsg: String? = null,
-    val errorMsg: String? = null
+    val errorMsg: String? = null,
+    val isImagePickerDialogVisible: Boolean = false
 )
 
 class ProfileViewModel(
@@ -90,15 +91,9 @@ class ProfileViewModel(
         }
     }
 
-    /**
-     * Procesa la URI seleccionada, la copia a almacenamiento interno y guarda la nueva URI en la BD.
-     * @param uri La URI de la imagen seleccionada (de cámara o galería).
-     * @return El ID de la nueva FotoEntity guardada, o null si falla.
-     */
     private suspend fun guardarImagenYObtenerId(uri: Uri): Long? {
         return withContext(Dispatchers.IO) {
             try {
-                // <<< CORRECCIÓN 1: Generar un nombre de archivo único que incluye la fecha.
                 val fileName = "IMG_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.jpg"
                 val destinationFile = File(applicationContext.filesDir, fileName)
 
@@ -108,13 +103,13 @@ class ProfileViewModel(
                     }
                 }
 
-                // <<< CORRECCIÓN 2: Crear la entidad usando el nuevo campo 'nombre'.
                 val nuevaFoto = FotoEntity(
-                    nombre = fileName, // Se usa el nombre de archivo generado.
-                    url = Uri.fromFile(destinationFile).toString() // Guardamos la URI del archivo persistente.
+                    nombre = fileName,
+                    url = Uri.fromFile(destinationFile).toString()
                 )
 
-                fotoDao.insertFoto(nuevaFoto)
+                val newId = fotoDao.insertFoto(nuevaFoto)
+                return@withContext newId
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -123,9 +118,6 @@ class ProfileViewModel(
         }
     }
 
-    /**
-     * Función pública que orquesta el cambio de foto de perfil.
-     */
     fun actualizarFotoDePerfil(uri: Uri) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true) }
@@ -151,32 +143,30 @@ class ProfileViewModel(
         }
     }
 
-    // --- El resto del ViewModel no necesita cambios ---
-
     fun onNameChange(newName: String) {
         _uiState.update { it.copy(name = newName, nameError = validateNameLettersOnly(newName)) }
         validateAllFields()
     }
 
     fun onUsernameChange(newUsername: String) {
-        _uiState.update { it.copy(username = newUsername, usernameError = validateUsername(newUsername)) }
+        _uiState.update { it.copy(usernameError = validateUsername(it.username)) }
         validateAllFields()
     }
 
     fun onPhoneChange(newPhone: String) {
-        _uiState.update { it.copy(phone = newPhone, phoneError = validatePhoneDigitsOnly(newPhone)) }
+        _uiState.update { it.copy(phone = newPhone, phoneError = validatePhoneExactNine(newPhone)) }
         validateAllFields()
     }
 
     fun onRunChange(newRun: String) {
-        _uiState.update { it.copy(run = newRun) }
+        _uiState.update { it.copy(run = it.run) }
         val error = validateChileanRUN(_uiState.value.run, _uiState.value.dv)
         _uiState.update { it.copy(runAndDvError = error) }
         validateAllFields()
     }
 
     fun onDvChange(newDv: String) {
-        _uiState.update { it.copy(dv = newDv.uppercase()) }
+        _uiState.update { it.copy(dv = it.dv) }
         val error = validateChileanRUN(_uiState.value.run, _uiState.value.dv)
         _uiState.update { it.copy(runAndDvError = error) }
         validateAllFields()
@@ -184,14 +174,25 @@ class ProfileViewModel(
 
     private fun validateAllFields() {
         _uiState.update {
-            val hasErrors = it.nameError != null || it.usernameError != null || it.phoneError != null || it.runAndDvError != null
-            it.copy(canSave = !hasErrors)
+            val nameErr = validateNameLettersOnly(it.name)
+            val phoneErr = validatePhoneExactNine(it.phone)
+            val usernameErr = it.usernameError ?: validateUsername(it.username)
+            val runDvErr = it.runAndDvError
+            val rolErr = validateRolName(it.rol)
+
+            it.copy(
+                nameError = nameErr,
+                phoneError = phoneErr,
+                usernameError = usernameErr,
+                canSave = (nameErr == null && phoneErr == null && usernameErr == null && runDvErr == null && rolErr == null)
+            )
         }
     }
 
     fun cancelEdit() {
         _uiState.update { currentState ->
-            currentState.originalUser?.let { original ->
+            currentState.originalUser?.let {
+                original ->
                 currentState.copy(
                     isEditing = false,
                     name = original.name,
@@ -221,17 +222,18 @@ class ProfileViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, errorMsg = null, successMsg = null) }
 
-            val updatedUserEntity = UserEntity(
-                id = currentState.id,
+            // <<< CORRECCIÓN: Obtener la entidad completa para no perder la contraseña >>>
+            val currentUserEntity = repository.getUserById(currentState.id)
+            if (currentUserEntity == null) {
+                _uiState.update { it.copy(isSubmitting = false, errorMsg = "Error fatal: no se encontró el usuario actual.") }
+                return@launch
+            }
+
+            // Crear la entidad actualizada manteniendo los datos que no se editan
+            val updatedUserEntity = currentUserEntity.copy(
                 name = currentState.name,
-                username = currentState.username,
-                email = currentState.email,
-                phone = currentState.phone,
-                run = currentState.run,
-                dv = currentState.dv,
-                password = "",
-                foto_id = currentState.originalUser?.fotoId ?: 1,
-                rol_id = currentState.originalUser?.rolId ?: 2 )
+                phone = currentState.phone
+            )
 
             val result = repository.updateUser(updatedUserEntity)
 
@@ -257,5 +259,21 @@ class ProfileViewModel(
 
     fun clearMessages() {
         _uiState.update { it.copy(successMsg = null, errorMsg = null) }
+    }
+
+    fun onImagePickerClick() {
+        _uiState.update { it.copy(isImagePickerDialogVisible = true) }
+    }
+
+    fun onImagePickerDismiss() {
+        _uiState.update { it.copy(isImagePickerDialogVisible = false) }
+    }
+
+    fun onImageUriSelected(uri: Uri?) {
+        if (uri != null) {
+            actualizarFotoDePerfil(uri)
+        } else {
+            onImagePickerDismiss()
+        }
     }
 }

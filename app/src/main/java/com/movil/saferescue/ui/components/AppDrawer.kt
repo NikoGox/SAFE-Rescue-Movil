@@ -28,7 +28,8 @@ fun AppDrawer(
     navigateTo: (String) -> Unit,
     onLogout: () -> Unit,
     isAuthenticated: Boolean,
-    isAdmin: Boolean // Parámetro para saber si es admin
+    isAdmin: Boolean, // Parámetro para saber si es admin
+    isBombero: Boolean // Parámetro para saber si es bombero
 ) {
     val menuItemsForAuthenticated = listOf(
         DrawerMenuItem(Route.Home.path, "Inicio", Icons.Default.Home),
@@ -75,14 +76,29 @@ fun AppDrawer(
         }
 
         if (isAuthenticated) {
-            // Opción exclusiva para administradores
             if (isAdmin) {
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Add, contentDescription = "Crear Incidente") },
+                    label = { Text("Crear Incidente") },
+                    selected = currentRoute == Route.CrearIncidente.path,
+                    onClick = { navigateTo(Route.CrearIncidente.path) }
+                )
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.AddAlert, contentDescription = "Crear Notificación") },
                     label = { Text("Crear Notificación") },
                     selected = currentRoute == Route.Notification.path,
                     onClick = { navigateTo(Route.Notification.path) }
+                )
+            }
+
+            if (isBombero) {
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Assignment, contentDescription = "Mis Incidentes") },
+                    label = { Text("Mis Incidentes") },
+                    selected = currentRoute == Route.IncidentesAsignados.path,
+                    onClick = { navigateTo(Route.IncidentesAsignados.path) }
                 )
             }
 

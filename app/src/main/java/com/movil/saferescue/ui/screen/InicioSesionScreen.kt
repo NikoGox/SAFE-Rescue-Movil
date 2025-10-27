@@ -279,7 +279,7 @@ private fun LoginScreen(
         Spacer(Modifier.height(32.dp))
 
         Text(
-            text = "Versión 1.7",
+            text = "Versión 1.8-Pre-Alpha",
             color = Color.Gray,
             modifier = Modifier.padding(top = 8.dp)
         )

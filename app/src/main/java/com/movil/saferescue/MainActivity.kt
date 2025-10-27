@@ -7,7 +7,7 @@ import androidx.navigation.compose.rememberNavController
 import com.movil.saferescue.navigation.AppNavGraph
 import com.movil.saferescue.ui.theme.SAFERescueTheme
 import com.movil.saferescue.ui.viewmodel.AuthViewModelFactory
-import com.movil.saferescue.ui.viewmodel.IncidentsViewModelFactory
+import com.movil.saferescue.ui.viewmodel.IncidenteViewModelFactory
 import com.movil.saferescue.ui.viewmodel.MensajeViewModelFactory
 import com.movil.saferescue.ui.viewmodel.ProfileViewModelFactory
 
@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
 
     private val incidenteViewModelFactory by lazy {
         val appContainer = application as SafeRescueApplication
-        IncidentsViewModelFactory(
+        IncidenteViewModelFactory(
             incidenteRepository = appContainer.incidenteRepository,
             userRepository = appContainer.userRepository,
             applicationContext = applicationContext
@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
                     authViewModelFactory = authViewModelFactory,
                     profileViewModelFactory = profileViewModelFactory,
                     mensajeViewModelFactory = mensajeViewModelFactory,
-                    incidentsViewModelFactory = incidenteViewModelFactory
+                    incidenteViewModelFactory = incidenteViewModelFactory
                 )
             }
         }

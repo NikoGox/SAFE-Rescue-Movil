@@ -12,14 +12,17 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 1.7
+### ❚❙❘ VERSIÓN 1.8-Pre-Alpha
 
-> <br>• Se modificó completamente el AppTopBar para que el botón de Notificaciones expanda dentro de cualquier pantalla las Notificaciones. 
-> <br>• Se modificaron las tarjetas de notificaciones para adaptarlas al nuevo formato.
-> <br>• Se eliminaron las opciones de Incidentes, Chat y Notificaciones del AppDrawer.
-> <br>• Se agregó la opción de Crear Notificación en el AppDrawer. 
+> <br>• Se modificó completamente el sistema de Incidentes para que funcione con la base de datos.  
+> <br>• Se agregó la pantalla de IncidentesAsignadosScreen para que el usuario pueda ver los incidentes que tomó/fueron asignados.
+> <br>• Se agregó la pantalla de CrearIncidente, para que el administrador pueda crear nuevos incidentes.
+> <br>• Se modificaron las tarjetas de incidente y se restringieron botones dependiendo del tipo de usuario.
+> <br>• Se actualizó la forma de poner la foto de perfil, ahora un componente ImagePicker esta encargado de seleccionar la foto.
+> <br>• Se quitó el input para poner una foto de perfil en la pantalla de registro.
+> <br>• Se modificaron las entidades de Incidente, Usuario, Etc, para que la lógica fuera correcta respecto a la base de datos.
+> <br>• Se preparó la clase de Incidente y sus variantes para implementar sistema de mapa para localizar los incidentes.
 > <br> > > > Modificar estilo del AppDrawer.
-> <br> > > > Terminar de desarrollar la función de Incidentes.
 > <br>
 
 ---

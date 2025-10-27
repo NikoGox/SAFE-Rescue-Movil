@@ -133,8 +133,8 @@ class AuthViewModel(
                 _login.update { it.copy(isSubmitting = true, errorMsg = null) }
 
                 val user = userRepository.getByEmailOrUsername(s.identifier)
-                if (user == null) {
-                    _login.update { it.copy(isSubmitting = false, errorMsg = "Usuario no encontrado") }
+                if (user == null || s.identifier.isBlank()) {
+                    _login.update { it.copy(isSubmitting = false, errorMsg = "Usuario no encontrado o identificador vacío") }
                     return@launch
                 }
 

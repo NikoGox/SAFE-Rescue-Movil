@@ -24,6 +24,14 @@ fun validatePhoneDigitsOnly(phone: String): String? {                  // Valida
     return null                                                        // OK
 }
 
+// Valida que el teléfono tenga solo dígitos y longitud exactamente 9 (para perfiles)
+fun validatePhoneExactNine(phone: String): String? {
+    if (phone.isBlank()) return "El teléfono es obligatorio"
+    if (!phone.all { it.isDigit() }) return "Solo números"
+    if (phone.length != 9) return "El teléfono debe tener 9 dígitos"
+    return null
+}
+
 // Valida seguridad de la contraseña (mín. 8, mayús, minús, número y símbolo; sin espacios)
 fun validateStrongPassword(pass: String): String? {                    // Requisitos mínimos de seguridad
     if (pass.isBlank()) return "La contraseña es obligatoria"          // No vacío

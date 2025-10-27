@@ -1,3 +1,17 @@
+❚❙❘ VERSIÓN 1.8-Pre-Alpha
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se modificó completamente el sistema de Incidentes para que funcione con la base de datos. 
+├─• Se agregó la pantalla de IncidentesAsignadosScreen para que el usuario pueda ver los incidentes que tomó/fueron asignados.
+├─• Se agregó la pantalla de CrearIncidente, para que el administrador pueda crear nuevos incidentes.
+├─• Se modificaron las tarjetas de incidente y se restringieron botones dependiendo del tipo de usuario.
+├─• Se actualizó la forma de poner la foto de perfil, ahora un componente ImagePicker esta encargado de seleccionar la foto.
+├─• Se quitó el input para poner una foto de perfil en la pantalla de registro.
+├─• Se modificaron las entidades de Incidente, Usuario, Etc, para que la lógica fuera correcta respecto a la base de datos.
+└─• Se preparó la clase de Incidente y sus variantes para implementar sistema de mapa para localizar los incidentes.
+
+->>> Modificar estilo del AppDrawer.
+->>> Unificar las TopBar
+
 ❚❙❘ VERSIÓN 1.7
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se modificó completamente el AppTopBar para que el botón de Notificaciones expanda dentro de cualquier pantalla las Notificaciones. 

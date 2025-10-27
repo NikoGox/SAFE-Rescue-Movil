@@ -26,13 +26,13 @@ fun AppNavGraph(
     authViewModelFactory: AuthViewModelFactory,
     profileViewModelFactory: ProfileViewModelFactory,
     mensajeViewModelFactory: MensajeViewModelFactory,
-    incidentsViewModelFactory: IncidentsViewModelFactory
+    incidenteViewModelFactory: IncidenteViewModelFactory 
 ) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
     val isAuthenticated by authViewModel.isAuthenticated.collectAsStateWithLifecycle()
-    val incidentsViewModel: IncidentsViewModel = viewModel(factory = incidentsViewModelFactory)
+    val incidenteViewModel: IncidenteViewModel = viewModel(factory = incidenteViewModelFactory)
     val mensajeViewModel: MensajeViewModel = viewModel(factory = mensajeViewModelFactory)
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentNavBackStackEntry?.destination?.route
@@ -40,6 +40,7 @@ fun AppNavGraph(
     var isPanelOpen by remember { mutableStateOf(false) }
     val notifications by mensajeViewModel.userNotifications.collectAsStateWithLifecycle()
     val isAdmin by mensajeViewModel.isCurrentUserAdmin.collectAsStateWithLifecycle(initialValue = false)
+    val isBombero by mensajeViewModel.isCurrentUserBombero.collectAsStateWithLifecycle(initialValue = false)
 
     LaunchedEffect(isAuthenticated) {
         if (isAuthenticated == false) {
@@ -56,7 +57,7 @@ fun AppNavGraph(
     }
 
     val navigateTo: (String) -> Unit = { route ->
-        isPanelOpen = false // Cierra el panel al navegar
+        isPanelOpen = false 
         if (route != currentRoute) {
             navController.navigate(route) {
                 if (route == Route.Home.path) {
@@ -80,7 +81,7 @@ fun AppNavGraph(
     ModalNavigationDrawer(
         drawerState = drawerState,
         gesturesEnabled = isGesturesEnabled,
-        drawerContent = { AppDrawer(currentRoute ?: "", navigateTo, onLogout, isAuthenticated == true, isAdmin) }
+        drawerContent = { AppDrawer(currentRoute ?: "", navigateTo, onLogout, isAuthenticated == true, isAdmin, isBombero) }
     ) {
         Scaffold(
             topBar = {
@@ -116,8 +117,14 @@ fun AppNavGraph(
                     composable(Route.Register.path) { RegisterScreenVm({ navigateTo(Route.Login.path) }, { navigateTo(Route.Login.path) }, authViewModelFactory) }
                     composable(Route.Profile.path) { ProfileScreen(profileViewModelFactory) }
                     composable(Route.Notification.path) { CreateNotificationScreen(mensajeViewModelFactory) { navController.popBackStack() } }
-                    composable(Route.Incidente.path) { IncidentsScreen(incidentsViewModel) }
+                    composable(Route.Incidente.path) { IncidenteScreen(incidenteViewModel, isAdmin, isBombero) }
                     composable(Route.Chat.path) { ChatScreenVm(mensajeViewModelFactory) { navController.popBackStack() } }
+                    composable(Route.CrearIncidente.path) { 
+                        CrearIncidenteScreen(incidenteViewModel) {
+                            navController.popBackStack()
+                        }
+                    }
+                    composable(Route.IncidentesAsignados.path) { IncidentesAsignadosScreen(incidenteViewModel) }
                 }
 
                 AnimatedVisibility(
