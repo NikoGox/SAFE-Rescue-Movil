@@ -2,6 +2,7 @@
 package com.movil.saferescue
 
 import android.app.Application
+import androidx.preference.PreferenceManager
 import com.movil.saferescue.data.local.database.AppDatabase
 import com.movil.saferescue.data.local.storage.UserPreferences
 import com.movil.saferescue.data.repository.IncidenteRepository
@@ -11,6 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import org.osmdroid.config.Configuration
 
 class SafeRescueApplication : Application() {
     // Usaremos un SupervisorJob para que si una corrutina falla, no cancele las demás.
@@ -27,6 +29,10 @@ class SafeRescueApplication : Application() {
     // 3. El método onCreate es el lugar perfecto para iniciar procesos de la aplicación.
     override fun onCreate() {
         super.onCreate()
+        // Configuración de OpenStreetMap
+        Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this))
+        Configuration.getInstance().userAgentValue = packageName
+
         warmUpDatabase()
     }
 

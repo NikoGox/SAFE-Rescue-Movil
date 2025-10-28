@@ -50,7 +50,6 @@ fun InfoRowItem(
                 .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 1. Indicador de no leído
             if (isUnread) {
                 Box(
                     modifier = Modifier
@@ -62,7 +61,6 @@ fun InfoRowItem(
                 )
             }
 
-            // 2. Contenido principal (título, subtítulo y fecha)
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -87,7 +85,6 @@ fun InfoRowItem(
                 )
             }
 
-            // 3. Botón de acción (eliminar)
             IconButton(onClick = onDeleteClick) {
                 Icon(
                     imageVector = Icons.Default.Delete,

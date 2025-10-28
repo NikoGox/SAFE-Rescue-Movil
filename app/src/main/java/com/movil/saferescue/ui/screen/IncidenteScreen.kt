@@ -137,6 +137,13 @@ fun IncidentCard(
                 }
                 Text(incident.titulo, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Text(text = fullAddress, style = MaterialTheme.typography.labelMedium)
+                if (incident.latitud != null && incident.longitud != null) {
+                    Text(
+                        text = "Lat: ${incident.latitud}, Lon: ${incident.longitud}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Text(
                     text = "Reportado el: ${formatDate(incident.fechaRegistro)}",
                     style = MaterialTheme.typography.bodySmall,

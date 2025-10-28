@@ -1,11 +1,9 @@
-// Archivo: app/src/main/java/com/movil/saferescue/data/local/incidente/IncidenteEntity.kt
 package com.movil.saferescue.data.local.incidente
 
 import androidx.room.*
 import com.movil.saferescue.data.local.foto.FotoEntity
 import com.movil.saferescue.data.local.user.UserEntity
 
-// Define los posibles estados de un incidente.
 enum class IncidenteEstado {
     ACTIVO,
     ASIGNADO,
@@ -19,9 +17,8 @@ enum class IncidenteEstado {
             entity = FotoEntity::class,
             parentColumns = ["id"],
             childColumns = ["foto_id"],
-            onDelete = ForeignKey.SET_NULL // Para no borrar el incidente si se borra la foto
+            onDelete = ForeignKey.SET_NULL
         ),
-        // Relación con el usuario que toma el incidente
         ForeignKey(
             entity = UserEntity::class,
             parentColumns = ["id"],
@@ -44,13 +41,11 @@ data class IncidenteEntity(
     @ColumnInfo(name = "foto_id")
     val foto_id: Long?,
 
-    // Guarda el estado actual del incidente como una cadena.
     val estado: String = IncidenteEstado.ACTIVO.name,
 
     @ColumnInfo(name = "asignado_a_user_id")
     val asignadoA: Long? = null, // ID del usuario que tomó el incidente.
 
-    // Nuevos campos de ubicación
     val latitud: Double?,
     val longitud: Double?,
     val comuna: String?,

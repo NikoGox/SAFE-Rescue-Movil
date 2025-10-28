@@ -1,10 +1,12 @@
 package com.movil.saferescue.ui.viewmodel
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.location.LocationServices
 import com.movil.saferescue.data.local.foto.FotoEntity
 import com.movil.saferescue.data.local.incidente.IncidenteEntity
 import com.movil.saferescue.data.local.incidente.IncidenteEstado
@@ -39,7 +41,9 @@ data class EditIncidentState(
 data class CreateIncidentState(
     val isCreating: Boolean = false,
     val createSuccess: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val latitud: Double? = null,
+    val longitud: Double? = null
 )
 
 class IncidenteViewModel(
@@ -59,8 +63,19 @@ class IncidenteViewModel(
 
     val currentUserId: StateFlow<Long?> = userRepository.loggedInUserId
 
+    private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
+
     init {
         loadIncidents()
+    }
+
+    @SuppressLint("MissingPermission")
+    fun requestLastLocation() {
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                _createState.update { it.copy(latitud = location.latitude, longitud = location.longitude) }
+            }
+        }
     }
 
     private fun loadIncidents() {
@@ -75,8 +90,6 @@ class IncidenteViewModel(
         titulo: String,
         detalle: String,
         imageUri: Uri?,
-        latitud: String,
-        longitud: String,
         comuna: String,
         region: String,
         direccion: String
@@ -87,16 +100,6 @@ class IncidenteViewModel(
         }
         if (detalle.length !in 10..100) {
             _createState.update { it.copy(error = "El detalle debe tener entre 10 y 100 caracteres.") }
-            return
-        }
-        val lat = latitud.toDoubleOrNull()
-        if (latitud.isNotBlank() && (lat == null || latitud.length > 15)) {
-            _createState.update { it.copy(error = "La latitud ingresada no es válida.") }
-            return
-        }
-        val lon = longitud.toDoubleOrNull()
-        if (longitud.isNotBlank() && (lon == null || longitud.length > 15)) {
-            _createState.update { it.copy(error = "La longitud ingresada no es válida.") }
             return
         }
         if (region.isEmpty()) {
@@ -120,8 +123,8 @@ class IncidenteViewModel(
                     titulo = titulo,
                     detalle = detalle,
                     foto_id = photoId,
-                    latitud = lat,
-                    longitud = lon,
+                    latitud = _createState.value.latitud,
+                    longitud = _createState.value.longitud,
                     comuna = comuna.takeIf { it.isNotBlank() },
                     region = region.takeIf { it.isNotBlank() },
                     direccion = direccion.takeIf { it.isNotBlank() }

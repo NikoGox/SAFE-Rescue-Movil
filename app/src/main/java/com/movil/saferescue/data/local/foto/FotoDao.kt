@@ -26,10 +26,7 @@ interface FotoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(fotos: List<FotoEntity>)
 
-    /**
-     * NUEVA FUNCIÓN: Elimina una foto por su ID.
-     * Útil si el usuario elimina un incidente o si se quiere limpiar fotos antiguas.
-     */
+    // Elimina una foto por su ID.
     @Query("DELETE FROM fotos WHERE id = :fotoId")
     suspend fun deleteFotoById(fotoId: Long)
 }

@@ -30,7 +30,7 @@ import com.movil.saferescue.ui.viewmodel.MensajeViewModelFactory
 @Composable
 fun ChatScreenVm(
     mensajeViewModelFactory: MensajeViewModelFactory,
-    onNavigateBack: () -> Unit // Se mantiene por si se necesita para alguna lógica interna
+    onNavigateBack: () -> Unit
 ) {
     val viewModel: MensajeViewModel = viewModel(factory = mensajeViewModelFactory)
     ChatScreen(viewModel = viewModel)
@@ -42,7 +42,7 @@ private fun ChatScreen(
 ) {
     val mensajes by viewModel.todosLosMensajesDeChat.collectAsStateWithLifecycle(initialValue = emptyList())
     val listState = rememberLazyListState()
-    val currentUserId = 3L // Esto debería obtenerse idealmente desde el viewModel o una sesión
+    val currentUserId = 3L
 
     LaunchedEffect(mensajes) {
         if (mensajes.isNotEmpty()) {
@@ -50,7 +50,6 @@ private fun ChatScreen(
         }
     }
 
-    // No hay Scaffold. Una Columna organiza la lista y el campo de texto.
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
@@ -70,7 +69,6 @@ private fun ChatScreen(
                 )
             }
         }
-        // El campo de texto siempre se mantiene en la parte inferior
         MessageInput(
             onSendMessage = { text ->
                 viewModel.enviarMensajeDeChat(text)

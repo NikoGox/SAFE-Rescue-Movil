@@ -28,8 +28,8 @@ fun AppDrawer(
     navigateTo: (String) -> Unit,
     onLogout: () -> Unit,
     isAuthenticated: Boolean,
-    isAdmin: Boolean, // Parámetro para saber si es admin
-    isBombero: Boolean // Parámetro para saber si es bombero
+    isAdmin: Boolean,
+    isBombero: Boolean
 ) {
     val menuItemsForAuthenticated = listOf(
         DrawerMenuItem(Route.Home.path, "Inicio", Icons.Default.Home),

@@ -1,6 +1,6 @@
 package com.movil.saferescue.domain.validation
 
-import android.util.Patterns // Usamos el patrón estándar de Android para emails
+import android.util.Patterns
 
 // Valida que el email no esté vacío y cumpla patrón de email
 fun validateEmail(email: String): String? {                            // Retorna String? (mensaje) o null si está OK

@@ -42,7 +42,7 @@ fun SRBottomNavigationBar(
     onItemClick: (String) -> Unit
 ) {
     val ICON_SIZE = 30.dp
-    val TEXT_FONT_SIZE = 18.sp // Define el tamaño de la fuente aquí
+    val TEXT_FONT_SIZE = 18.sp
 
     NavigationBar(
         containerColor = Color.White,

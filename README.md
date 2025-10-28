@@ -12,16 +12,13 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 1.8-Pre-Alpha
+### ❚❙❘ VERSIÓN 1.9-Pre-Alpha
 
-> <br>• Se modificó completamente el sistema de Incidentes para que funcione con la base de datos.  
-> <br>• Se agregó la pantalla de IncidentesAsignadosScreen para que el usuario pueda ver los incidentes que tomó/fueron asignados.
-> <br>• Se agregó la pantalla de CrearIncidente, para que el administrador pueda crear nuevos incidentes.
-> <br>• Se modificaron las tarjetas de incidente y se restringieron botones dependiendo del tipo de usuario.
-> <br>• Se actualizó la forma de poner la foto de perfil, ahora un componente ImagePicker esta encargado de seleccionar la foto.
-> <br>• Se quitó el input para poner una foto de perfil en la pantalla de registro.
-> <br>• Se modificaron las entidades de Incidente, Usuario, Etc, para que la lógica fuera correcta respecto a la base de datos.
-> <br>• Se preparó la clase de Incidente y sus variantes para implementar sistema de mapa para localizar los incidentes.
+> <br>• Se integro la API Nativa de gps para que los nuevos incidentes tengan ubicación basada en el gps.
+> <br>• Se incluyó un mapa en la pantalla principal que refleja los incidentes usando sus coordenadas.
+> <br>• Se agregó boton de Cerrar sesión al menu lateral.
+> <br>• Ahora podemos incluir las coordenadas para los incidentes directamente con el gps del celular.
+> <br>• Se ajustó la paleta de colores y se hicieron algunos cambios en el diseño.
 > <br> > > > Modificar estilo del AppDrawer.
 > <br>
 

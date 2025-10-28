@@ -17,7 +17,7 @@ data class MensajeUsuarioEntity(
     val userId: Long,
 
     @ColumnInfo(name = "plantilla_id", index = true)
-    val plantillaId: Long?, // referencia opcional a la plantilla original en la tabla "mensajes"
+    val plantillaId: Long?,
 
     @ColumnInfo(name = "titulo")
     val titulo: String,

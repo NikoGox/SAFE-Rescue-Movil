@@ -62,7 +62,6 @@ private fun NotificationRow(
     onDelete: () -> Unit,
     onMarkAsRead: () -> Unit
 ) {
-    // El fondo cambia sutilmente si ya está leído
     val backgroundColor = if (notification.isRead) MaterialTheme.colorScheme.surface.copy(alpha = 0.9f) else MaterialTheme.colorScheme.surface
     val contentAlpha = if (notification.isRead) 0.6f else 1f
 
@@ -70,26 +69,25 @@ private fun NotificationRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(backgroundColor)
-            .padding(horizontal = 16.dp, vertical = 20.dp) // Mayor padding vertical
+            .padding(horizontal = 16.dp, vertical = 20.dp)
     ) {
         Row(
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Columna principal con la información
             Column(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
                     text = notification.titulo,
-                    style = MaterialTheme.typography.titleLarge, // Texto más grande
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = if (notification.isRead) FontWeight.Normal else FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = notification.mensaje,
-                    style = MaterialTheme.typography.bodyLarge, // Texto más grande
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -99,7 +97,6 @@ private fun NotificationRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha)
                 )
             }
-            // Botón para eliminar
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Default.Delete,
@@ -109,7 +106,6 @@ private fun NotificationRow(
             }
         }
 
-        // Botón "Marcar como leído", solo visible si la notificación no está leída
         if (!notification.isRead) {
             Spacer(modifier = Modifier.height(16.dp))
             Button(

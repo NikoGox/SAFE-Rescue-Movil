@@ -18,7 +18,6 @@ interface MensajeUsuarioDao {
     @Query("UPDATE mensajes_usuario SET deleted = 1 WHERE id = :mensajeId")
     suspend fun markDeleted(mensajeId: Long)
 
-    // Nueva función para marcar una notificación específica como leída
     @Query("UPDATE mensajes_usuario SET isRead = 1 WHERE id = :mensajeId")
     suspend fun markAsRead(mensajeId: Long)
 

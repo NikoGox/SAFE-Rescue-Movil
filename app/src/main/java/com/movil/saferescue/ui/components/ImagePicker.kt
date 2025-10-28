@@ -1,4 +1,3 @@
-// ui/components/ImagePicker.kt
 package com.movil.saferescue.ui.components
 
 import android.content.Context
@@ -29,11 +28,11 @@ fun createTempUri(context: Context): Uri {
     val imageFile = File.createTempFile(
         "JPEG_${timeStamp}_",
         ".jpg",
-        context.cacheDir // Usamos el directorio cache definido en file_paths.xml
+        context.cacheDir
     )
     return FileProvider.getUriForFile(
         context,
-        "${context.packageName}.provider", // Debe coincidir con el 'authorities' del Manifest
+        "${context.packageName}.provider",
         imageFile
     )
 }
@@ -54,9 +53,7 @@ fun ImagePickerDialog(
     val context = LocalContext.current
     var tempImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // --- LANZADORES DE ACTIVIDADES ---
 
-    // 1. Lanzador para la galería (Photo Picker moderno)
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri: Uri? ->
@@ -65,32 +62,26 @@ fun ImagePickerDialog(
         }
     )
 
-    // 2. Lanzador para la cámara
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success: Boolean ->
             onDismissRequest()
             if (success) {
-                // Si la foto se tomó correctamente, usamos la URI temporal que creamos
                 onImageSelected(tempImageUri)
             } else {
-                onImageSelected(null) // Falló la captura
+                onImageSelected(null)
             }
         }
     )
 
-    // 3. Lanzador para pedir el permiso de la cámara
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted: Boolean ->
             if (isGranted) {
-                // Permiso concedido, ahora lanzamos la cámara
                 tempImageUri = createTempUri(context)
                 cameraLauncher.launch(tempImageUri)
             } else {
-                // Permiso denegado
                 onDismissRequest()
-                // Aquí podrías mostrar un Snackbar informando al usuario
             }
         }
     )
@@ -103,7 +94,6 @@ fun ImagePickerDialog(
                 Column {
                     TextButton(
                         onClick = {
-                            // Lanzar el selector de fotos moderno
                             galleryLauncher.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
@@ -114,7 +104,6 @@ fun ImagePickerDialog(
                     }
                     TextButton(
                         onClick = {
-                            // Pedir permiso para la cámara antes de lanzarla
                             cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
                         },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
@@ -123,7 +112,7 @@ fun ImagePickerDialog(
                     }
                 }
             },
-            confirmButton = {} // No necesitamos botones de confirmación
+            confirmButton = {}
         )
     }
 }

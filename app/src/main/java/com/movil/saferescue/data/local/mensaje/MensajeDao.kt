@@ -116,8 +116,6 @@ interface MensajeDao {
     @Query("UPDATE mensajes SET isRead = 1 WHERE isRead = 0 AND tipo_mensaje_id = :tipoId")
     suspend fun markAllAsReadByTipoId(tipoId: Long)
 
-    // --- FUNCIÓN CON JOIN PARA EL CHAT ---
-
     /**
      * Obtiene los mensajes junto con la información del remitente (nombre y foto)
      * usando un JOIN con las tablas de usuarios y fotos.

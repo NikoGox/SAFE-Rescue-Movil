@@ -146,7 +146,7 @@ class UserRepository(
         run: String,
         dv: String,
         username: String,
-        fotoUrl: String, // La URL de la foto de perfil por defecto
+        fotoUrl: String,
         rol_id: Long
     ): Result<Long> {
         return withContext(Dispatchers.IO) {

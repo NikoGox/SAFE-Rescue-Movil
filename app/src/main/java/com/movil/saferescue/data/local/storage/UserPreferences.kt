@@ -11,7 +11,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-// Extensión para crear una instancia de DataStore a nivel de la aplicación
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
 
 /**
@@ -22,13 +21,10 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class UserPreferences(private val context: Context) {
 
     private object PreferencesKeys {
-        // --- Claves existentes y nuevas ---
         val SAVED_USER_IDENTIFIER = stringPreferencesKey("saved_user_identifier")
         val ACTIVE_USER_ID = longPreferencesKey("active_user_id")
         val SESSION_PERSISTS = booleanPreferencesKey("session_persists")
     }
-
-    // --- Lógica para recordar el identificador (existente) ---
 
     /**
      * Un Flow que emite el identificador del usuario guardado cada vez que cambia.

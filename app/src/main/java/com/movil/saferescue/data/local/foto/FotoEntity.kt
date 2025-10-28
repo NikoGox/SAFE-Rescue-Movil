@@ -10,6 +10,6 @@ import androidx.room.PrimaryKey
 data class FotoEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
-    val nombre: String, // El nombre único del archivo, ej: "IMG_20251022_051208.jpg"
-    val url: String     // La URI local persistente de la imagen
+    val nombre: String,
+    val url: String
 )

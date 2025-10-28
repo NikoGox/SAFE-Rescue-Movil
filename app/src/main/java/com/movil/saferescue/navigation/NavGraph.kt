@@ -1,5 +1,6 @@
 package com.movil.saferescue.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -42,6 +43,13 @@ fun AppNavGraph(
     val isAdmin by mensajeViewModel.isCurrentUserAdmin.collectAsStateWithLifecycle(initialValue = false)
     val isBombero by mensajeViewModel.isCurrentUserBombero.collectAsStateWithLifecycle(initialValue = false)
 
+    // Handle back press to close drawer, independent of gestures
+    if (drawerState.isOpen) {
+        BackHandler(enabled = true) {
+            scope.launch { drawerState.close() }
+        }
+    }
+
     LaunchedEffect(isAuthenticated) {
         if (isAuthenticated == false) {
             isPanelOpen = false
@@ -57,7 +65,7 @@ fun AppNavGraph(
     }
 
     val navigateTo: (String) -> Unit = { route ->
-        isPanelOpen = false 
+        isPanelOpen = false
         if (route != currentRoute) {
             navController.navigate(route) {
                 if (route == Route.Home.path) {
@@ -76,7 +84,8 @@ fun AppNavGraph(
     }
 
     val routesWithoutBars = listOf(Route.Login.path, Route.Register.path)
-    val isGesturesEnabled = isAuthenticated == true && !isPanelOpen && currentRoute !in routesWithoutBars && currentRoute != Route.Chat.path
+    // Disable gestures on Home screen (map) to prevent conflict, but allow tap-to-close via the scrim
+    val isGesturesEnabled = currentRoute != Route.Home.path && isAuthenticated == true && !isPanelOpen && currentRoute !in routesWithoutBars && currentRoute != Route.Chat.path
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -112,14 +121,21 @@ fun AppNavGraph(
                     startDestination = Route.Login.path,
                     modifier = Modifier.padding(innerPadding)
                 ) {
-                    composable(Route.Home.path) { HomeScreen(true, {}, {}) }
+                    composable(Route.Home.path) {
+                        HomeScreen(
+                            isAuthenticated = (isAuthenticated == true),
+                            onGoLogin = { navigateTo(Route.Login.path) },
+                            onGoRegister = { navigateTo(Route.Register.path) },
+                            incidenteViewModel = incidenteViewModel
+                        )
+                    }
                     composable(Route.Login.path) { LoginScreenVm({ navigateTo(Route.Home.path) }, { navigateTo(Route.Register.path) }, authViewModelFactory, authViewModel) }
                     composable(Route.Register.path) { RegisterScreenVm({ navigateTo(Route.Login.path) }, { navigateTo(Route.Login.path) }, authViewModelFactory) }
                     composable(Route.Profile.path) { ProfileScreen(profileViewModelFactory) }
                     composable(Route.Notification.path) { CreateNotificationScreen(mensajeViewModelFactory) { navController.popBackStack() } }
                     composable(Route.Incidente.path) { IncidenteScreen(incidenteViewModel, isAdmin, isBombero) }
                     composable(Route.Chat.path) { ChatScreenVm(mensajeViewModelFactory) { navController.popBackStack() } }
-                    composable(Route.CrearIncidente.path) { 
+                    composable(Route.CrearIncidente.path) {
                         CrearIncidenteScreen(incidenteViewModel) {
                             navController.popBackStack()
                         }

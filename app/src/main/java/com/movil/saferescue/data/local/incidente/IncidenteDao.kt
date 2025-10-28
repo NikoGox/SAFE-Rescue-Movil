@@ -4,15 +4,11 @@ package com.movil.saferescue.data.local.incidente
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
-// <<< INICIO DE LA CORRECCIÓN >>>
-// Se mueve la data class fuera y por encima de la interfaz.
-// Ahora es una clase de nivel superior en este archivo.
 data class IncidentWithDetails(
     @Embedded val incident: IncidenteEntity,
     @ColumnInfo(name = "photo_url") val photoUrl: String?,
     @ColumnInfo(name = "asignado_a_nombre") val asignadoANombre: String? // Nombre del usuario
 )
-// <<< FIN DE LA CORRECCIÓN >>>
 
 
 /**

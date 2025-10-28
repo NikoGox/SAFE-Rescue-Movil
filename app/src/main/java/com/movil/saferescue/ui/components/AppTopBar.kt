@@ -20,9 +20,7 @@ fun AppTopBar(
     title: String,
     isAuthenticated: Boolean,
     onNavigate: (route: String) -> Unit,
-    // <<< CORRECCIÓN 1: Acepta un Composable para el ícono >>>
     navigationIcon: @Composable () -> Unit,
-    // <<< CORRECCIÓN 2: Acepta un Composable para las acciones >>>
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     CenterAlignedTopAppBar(
@@ -41,9 +39,7 @@ fun AppTopBar(
 
             )
         },
-        // <<< CORRECCIÓN 3: Usa el navigationIcon que se le pasa por parámetro >>>
         navigationIcon = navigationIcon,
-        // <<< CORRECCIÓN 4: Usa las acciones que se le pasan por parámetro >>>
         actions = actions
     )
 }

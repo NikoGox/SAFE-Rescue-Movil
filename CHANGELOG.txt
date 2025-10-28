@@ -1,3 +1,13 @@
+❚❙❘ VERSIÓN 1.9-Pre-Alpha
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se integro la API Nativa de gps para que los nuevos incidentes tengan ubicación basada en el gps.
+├─• Se incluyó un mapa en la pantalla principal que refleja los incidentes usando sus coordenadas.
+├─• Se agregó boton de Cerrar sesión al menu lateral.
+├─• Ahora podemos incluir las coordenadas para los incidentes directamente con el gps del celular.
+└─• Se ajustó la paleta de colores y se hicieron algunos cambios en el diseño.
+
+->>> Modificar estilo del AppDrawer.
+
 ❚❙❘ VERSIÓN 1.8-Pre-Alpha
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se modificó completamente el sistema de Incidentes para que funcione con la base de datos. 
@@ -10,7 +20,6 @@
 └─• Se preparó la clase de Incidente y sus variantes para implementar sistema de mapa para localizar los incidentes.
 
 ->>> Modificar estilo del AppDrawer.
-->>> Unificar las TopBar
 
 ❚❙❘ VERSIÓN 1.7
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺

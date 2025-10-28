@@ -1,7 +1,4 @@
-// Archivo: app/src/main/java/com/movil/saferescue/data/repository/IncidenteRepository.kt
 package com.movil.saferescue.data.repository
-
-// Se elimina la importación incorrecta de 'copy'
 
 import com.movil.saferescue.data.local.foto.FotoDao
 import com.movil.saferescue.data.local.foto.FotoEntity // Importación necesaria para la nueva función
@@ -70,23 +67,15 @@ class IncidenteRepository(
      * Marca un incidente como RESUELTO.
      */
     suspend fun closeIncident(incidenteId: Long) {
-        // 1. Ejecutar toda la operación en el hilo de IO.
         withContext(Dispatchers.IO) {
-            // 2. Obtener el valor actual y único del Flow usando .first().
             val incidenteActual = incidenteDao.getIncidenteById(incidenteId).first()
 
-            // 3. Verificar si el incidente realmente existe.
             if (incidenteActual != null) {
-                // 4. Crear una copia del objeto, modificando solo el estado.
                 val incidenteCerrado = incidenteActual.copy(
                     estado = IncidenteEstado.RESUELTO.name,
-                    // Opcional: podrías limpiar el 'asignadoA' si tiene sentido en tu lógica de negocio.
-                    // asignadoA = null
                 )
-                // 5. Llamar al método 'updateIncidente' que sí existe en el DAO.
                 incidenteDao.updateIncidente(incidenteCerrado)
             } else {
-                // El manejo de excepciones es una buena práctica.
                 throw Exception("No se pudo encontrar el incidente con ID: $incidenteId para cerrarlo.")
             }
         }
@@ -101,7 +90,7 @@ class IncidenteRepository(
             incidente?.let {
                 val updatedIncident = it.copy(
                     asignadoA = userId,
-                    estado = IncidenteEstado.ASIGNADO.name // Ahora el compilador conoce 'IncidenteEstado'
+                    estado = IncidenteEstado.ASIGNADO.name
                 )
                 incidenteDao.updateIncidente(updatedIncident)
             }

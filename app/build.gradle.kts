@@ -14,7 +14,7 @@ android {
         minSdk = 21
         targetSdk = 36
         versionCode = 1
-        versionName = "1.8-Pre-Alpha"
+        versionName = "1.9-Pre-Alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -102,6 +102,15 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.7.0")
 
     implementation("org.mindrot:jbcrypt:0.4")
+
+    // Dependencia para servicios de ubicación de Google Play
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    // Implementación de OpenStreetMap (Librería principal)
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
+
+    // Dependencia para PreferenceManager
+    implementation("androidx.preference:preference-ktx:1.2.1")
 
 
     //Importante despues sintonizar las librerias
