@@ -3,8 +3,8 @@ package com.movil.saferescue.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.movil.saferescue.data.local.mensaje.MensajeConRemitente
-import com.movil.saferescue.data.local.mensaje.MensajeEntity
-import com.movil.saferescue.data.local.mensaje.MensajeUsuarioEntity
+import com.movil.saferescue.data.local.notificacion.NotificacionEntity
+import com.movil.saferescue.data.repository.ConversacionItem
 import com.movil.saferescue.data.repository.MensajeRepository
 import com.movil.saferescue.data.repository.UserRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -12,8 +12,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 data class AlertasUiState(
-    val alertas: List<MensajeEntity> = emptyList(),
-    val contadorNoLeidas: Int = 0,
     val isLoading: Boolean = true,
     val errorMsg: String? = null
 )
@@ -26,54 +24,43 @@ class MensajeViewModel(
     private val _alertasUiState = MutableStateFlow(AlertasUiState())
     val alertasUiState: StateFlow<AlertasUiState> = _alertasUiState.asStateFlow()
 
-    init {
-        observarAlertas()
+    // Estado para saber qué conversación está activa (null = viendo lista de chats)
+    private val _activeConversationId = MutableStateFlow<Long?>(null)
+    val activeConversationId: StateFlow<Long?> = _activeConversationId.asStateFlow()
+
+    fun selectConversation(conversationId: Long?) {
+        _activeConversationId.value = conversationId
     }
 
-    private fun observarAlertas() {
-        viewModelScope.launch {
-            combine(
-                repository.todasLasAlertas,
-                repository.contadorAlertasNoLeidasGlobal
-            ) { alertas, contador ->
-                Pair(alertas, contador)
+    // Lista de Conversaciones del usuario
+    val userConversations: StateFlow<List<ConversacionItem>> = userRepository.loggedInUserId
+        .flatMapLatest { userId ->
+            if (userId == null) flowOf(emptyList()) else repository.getConversacionesForUser(userId)
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    // Mensajes de la conversación activa
+    val activeChatMessages: StateFlow<List<MensajeConRemitente>> = _activeConversationId
+        .flatMapLatest { convId ->
+            if (convId == null) {
+                flowOf(emptyList())
+            } else {
+                repository.getChatMessages(convId)
             }
-                .onStart { _alertasUiState.value = _alertasUiState.value.copy(isLoading = true) }
-                .catch { throwable ->
-                    _alertasUiState.value = _alertasUiState.value.copy(isLoading = false, errorMsg = "Error al cargar alertas: ${throwable.message}")
-                }
-                .collect { (alertas, contador) ->
-                    _alertasUiState.value = _alertasUiState.value.copy(
-                        isLoading = false,
-                        alertas = alertas,
-                        contadorNoLeidas = contador
-                    )
-                }
         }
-    }
-
-    fun marcarAlertasComoLeidas() {
-        viewModelScope.launch {
-            repository.marcarTodasLasAlertasComoLeidas()
-        }
-    }
-
-    fun eliminarAlertas() {
-        viewModelScope.launch {
-            repository.eliminarTodasLasAlertas()
-        }
-    }
-
-    val todosLosMensajesDeChat: Flow<List<MensajeConRemitente>> = repository.todosLosMensajesDeChat
-        .catch { throwable ->
-            _alertasUiState.value = _alertasUiState.value.copy(errorMsg = "Error al cargar el chat: ${throwable.message}")
-        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        
+    // Current User ID for UI logic (right/left alignment)
+    val currentUserId: StateFlow<Long?> = userRepository.loggedInUserId
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     fun enviarMensajeDeChat(contenido: String) {
         if (contenido.isNotBlank()) {
-            val currentUserId = 3L
-            viewModelScope.launch {
-                repository.enviarMensajeDeChat(contenido, currentUserId)
+             viewModelScope.launch {
+                 val currentUserId = userRepository.loggedInUserId.firstOrNull() ?: return@launch
+                 val currentConvId = _activeConversationId.value
+                 
+                 repository.enviarMensajeDeChat(contenido, currentUserId, currentConvId)
             }
         }
     }
@@ -83,33 +70,31 @@ class MensajeViewModel(
             repository.eliminarMensajePorId(mensajeId)
         }
     }
-
-    fun limpiarError() {
-        _alertasUiState.value = _alertasUiState.value.copy(errorMsg = null)
-    }
+    
+    // --- Notification Logic ---
 
     val userNotifications = userRepository.loggedInUserId
         .flatMapLatest { userId ->
             if (userId == null) {
-                flowOf(emptyList<MensajeUsuarioEntity>())
+                flowOf(emptyList<NotificacionEntity>())
             } else {
-                repository.observeNotificationsForUser(userId)
+                repository.getNotificacionesForUser(userId)
             }
         }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val userUnreadCount = userRepository.loggedInUserId
         .flatMapLatest { userId ->
-            if (userId == null) flowOf(0) else repository.getUnreadCountForUser(userId)
+            if (userId == null) flowOf(0) else repository.getUnreadNotificacionesCount(userId)
         }
         .stateIn(viewModelScope, SharingStarted.Lazily, 0)
 
-    fun deleteUserNotification(mensajeUsuarioId: Long) {
-        viewModelScope.launch { repository.deleteUserNotification(mensajeUsuarioId) }
+    fun deleteUserNotification(notificacionId: Long) {
+        viewModelScope.launch { repository.deleteNotification(notificacionId) }
     }
 
-    fun markNotificationAsRead(mensajeId: Long) {
-        viewModelScope.launch { repository.markNotificationAsRead(mensajeId) }
+    fun markNotificationAsRead(notificacionId: Long) {
+        viewModelScope.launch { repository.markNotificationAsRead(notificacionId) }
     }
 
     fun createGlobalNotification(titulo: String, detalle: String) {
@@ -118,6 +103,12 @@ class MensajeViewModel(
             repository.crearAlertaGlobal(titulo, detalle, remitenteId)
         }
     }
+    
+    fun limpiarError() {
+        _alertasUiState.value = _alertasUiState.value.copy(errorMsg = null)
+    }
+
+    // --- Permissions ---
 
     val isCurrentUserAdmin: Flow<Boolean> = userRepository.loggedInUserId
         .flatMapLatest { userId ->

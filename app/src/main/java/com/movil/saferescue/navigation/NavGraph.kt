@@ -34,7 +34,9 @@ fun AppNavGraph(
     val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
     val isAuthenticated by authViewModel.isAuthenticated.collectAsStateWithLifecycle()
     val incidenteViewModel: IncidenteViewModel = viewModel(factory = incidenteViewModelFactory)
+    // Instanciamos el ViewModel aquí para que sea compartido por todo el NavGraph
     val mensajeViewModel: MensajeViewModel = viewModel(factory = mensajeViewModelFactory)
+    
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentNavBackStackEntry?.destination?.route
 
@@ -42,6 +44,9 @@ fun AppNavGraph(
     val notifications by mensajeViewModel.userNotifications.collectAsStateWithLifecycle()
     val isAdmin by mensajeViewModel.isCurrentUserAdmin.collectAsStateWithLifecycle(initialValue = false)
     val isBombero by mensajeViewModel.isCurrentUserBombero.collectAsStateWithLifecycle(initialValue = false)
+    
+    // Detectar si estamos en una conversación activa para mostrar la flecha de atrás
+    val isConversationRoute = currentRoute == Route.Conversation.path
 
     // Handle back press to close drawer, independent of gestures
     if (drawerState.isOpen) {
@@ -85,7 +90,7 @@ fun AppNavGraph(
 
     val routesWithoutBars = listOf(Route.Login.path, Route.Register.path)
     // Disable gestures on Home screen (map) to prevent conflict, but allow tap-to-close via the scrim
-    val isGesturesEnabled = currentRoute != Route.Home.path && isAuthenticated == true && !isPanelOpen && currentRoute !in routesWithoutBars && currentRoute != Route.Chat.path
+    val isGesturesEnabled = currentRoute != Route.Home.path && isAuthenticated == true && !isPanelOpen && currentRoute !in routesWithoutBars && currentRoute != Route.Conversation.path
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -98,10 +103,13 @@ fun AppNavGraph(
                     AppTopBarWithNotifications(
                         viewModel = mensajeViewModel,
                         isAuthenticated = true,
-                        isChatScreen = currentRoute == Route.Chat.path,
+                        isChatScreen = isConversationRoute, // Solo true si estamos DENTRO de un chat
                         isPanelOpen = isPanelOpen,
                         onOpenDrawer = { scope.launch { drawerState.open() } },
-                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateBack = { 
+                            // Si estamos en una conversación, volvemos a la lista.
+                            navController.popBackStack() 
+                        },
                         onTogglePanel = { isPanelOpen = !isPanelOpen }
                     )
                 }
@@ -134,7 +142,30 @@ fun AppNavGraph(
                     composable(Route.Profile.path) { ProfileScreen(profileViewModelFactory) }
                     composable(Route.Notification.path) { CreateNotificationScreen(mensajeViewModelFactory) { navController.popBackStack() } }
                     composable(Route.Incidente.path) { IncidenteScreen(incidenteViewModel, isAdmin, isBombero) }
-                    composable(Route.Chat.path) { ChatScreenVm(mensajeViewModelFactory) { navController.popBackStack() } }
+                    
+                    // Ruta 1: Lista de Chats
+                    composable(Route.Chat.path) { 
+                        // Pasamos la instancia COMPARTIDA del ViewModel
+                        ChatListScreen(
+                            viewModel = mensajeViewModel,
+                            onConversationClick = { chatId ->
+                                // Guardamos el estado en el VM compartido y navegamos
+                                mensajeViewModel.selectConversation(chatId)
+                                navController.navigate(Route.Conversation.path)
+                            }
+                        ) 
+                    }
+
+                    // Ruta 2: Conversación Activa
+                    composable(Route.Conversation.path) {
+                        // Pasamos la MISMA instancia compartida del ViewModel
+                        ConversationScreen(
+                            viewModel = mensajeViewModel,
+                            conversationId = null, // El estado ya está en el VM
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                    
                     composable(Route.CrearIncidente.path) {
                         CrearIncidenteScreen(incidenteViewModel) {
                             navController.popBackStack()

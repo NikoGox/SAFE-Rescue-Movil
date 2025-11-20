@@ -12,6 +12,7 @@ sealed class Route( //Clase sellada
     object Incidente:Route("incidente")
 
     object Chat:Route("chat")
+    object Conversation:Route("conversation")
 
     object CrearIncidente:Route("crear_incidente")
 

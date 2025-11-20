@@ -10,16 +10,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.movil.saferescue.data.local.mensaje.MensajeUsuarioEntity
+import com.movil.saferescue.data.local.notificacion.NotificacionEntity
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun NotificationsPanel(
-    notifications: List<MensajeUsuarioEntity>,
+    notifications: List<NotificacionEntity>,
     onDeleteNotification: (Long) -> Unit,
     onMarkAsRead: (Long) -> Unit,
     modifier: Modifier = Modifier
@@ -58,12 +57,19 @@ fun NotificationsPanel(
 
 @Composable
 private fun NotificationRow(
-    notification: MensajeUsuarioEntity,
+    notification: NotificacionEntity,
     onDelete: () -> Unit,
     onMarkAsRead: () -> Unit
 ) {
-    val backgroundColor = if (notification.isRead) MaterialTheme.colorScheme.surface.copy(alpha = 0.9f) else MaterialTheme.colorScheme.surface
-    val contentAlpha = if (notification.isRead) 0.6f else 1f
+    // Estado 8: Recibido (No leída)
+    // Estado 9: Visto (Leída)
+    // Cualquier otro estado se asume como no leído si no es 9 para mayor seguridad, 
+    // pero la lógica principal es: 9 = leída, 8 (y otros) = pendiente.
+    
+    val isRead = notification.estadoId == 9L
+
+    val backgroundColor = if (isRead) MaterialTheme.colorScheme.surface.copy(alpha = 0.9f) else MaterialTheme.colorScheme.surface
+    val contentAlpha = if (isRead) 0.6f else 1f
 
     Column(
         modifier = Modifier
@@ -81,18 +87,18 @@ private fun NotificationRow(
                 Text(
                     text = notification.titulo,
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = if (notification.isRead) FontWeight.Normal else FontWeight.Bold,
+                    fontWeight = if (isRead) FontWeight.Normal else FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = notification.mensaje,
+                    text = notification.detalle,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(notification.fechaSubida)),
+                    text = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(notification.fechaCreacion)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha)
                 )
@@ -106,7 +112,7 @@ private fun NotificationRow(
             }
         }
 
-        if (!notification.isRead) {
+        if (!isRead) {
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = onMarkAsRead,

@@ -24,7 +24,15 @@ class SafeRescueApplication : Application() {
 
     val userRepository by lazy { UserRepository(database.userDao(), database.fotoDao(), userPreferences) }
     val incidenteRepository by lazy { IncidenteRepository(database.incidenteDao(), database.fotoDao()) }
-    val mensajeRepository by lazy { MensajeRepository(database.mensajeDao(), database.userDao(), database.mensajeUsuarioDao()) }
+    val mensajeRepository by lazy { 
+        MensajeRepository(
+            database.mensajeDao(), 
+            database.userDao(), 
+            database.notificacionDao(),
+            database.conversacionDao(),
+            database.participanteConvDao()
+        ) 
+    }
 
     // 3. El método onCreate es el lugar perfecto para iniciar procesos de la aplicación.
     override fun onCreate() {

@@ -1,3 +1,13 @@
+❚❙❘ VERSIÓN 1.10
+⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+├─• Se crearon los paquetes repository, viewmodel y domain en el apartado de Test.
+├─• Se crearon los archivos necesarios para implementar pruebas unitarias.
+├─• Se modificó la logica de mensajes y notificaciones para separarlos creando la nueva clase notificacion.
+├─• Se agregaron 2 nuevas clases para gestionar las conversiones y sus participantes a futuro.
+└─• Se modificó la pantalla de ChatScreen para que ahora muestre una lista de chat.
+
+->>> Modificar estilo del AppDrawer.
+
 ❚❙❘ VERSIÓN 1.9-Pre-Alpha
 ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
 ├─• Se integro la API Nativa de gps para que los nuevos incidentes tengan ubicación basada en el gps.

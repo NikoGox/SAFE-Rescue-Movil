@@ -12,13 +12,13 @@ SAFE Rescue es una aplicación diseñada para la gestión eficiente y rápida de
 
 ## Últimos cambios
 
-### ❚❙❘ VERSIÓN 1.9-Pre-Alpha
+### ❚❙❘ VERSIÓN 1.10
 
-> <br>• Se integro la API Nativa de gps para que los nuevos incidentes tengan ubicación basada en el gps.
-> <br>• Se incluyó un mapa en la pantalla principal que refleja los incidentes usando sus coordenadas.
-> <br>• Se agregó boton de Cerrar sesión al menu lateral.
-> <br>• Ahora podemos incluir las coordenadas para los incidentes directamente con el gps del celular.
-> <br>• Se ajustó la paleta de colores y se hicieron algunos cambios en el diseño.
+> <br>• Se crearon los paquetes repository, viewmodel y domain en el apartado de Test.
+> <br>• Se crearon los archivos necesarios para implementar pruebas unitarias.
+> <br>• Se modificó la logica de mensajes y notificaciones para separarlos creando la nueva clase notificacion.
+> <br>• Se agregaron 2 nuevas clases para gestionar las conversiones y sus participantes a futuro.
+> <br>• Se modificó la pantalla de ChatScreen para que ahora muestre una lista de chat.
 > <br> > > > Modificar estilo del AppDrawer.
 > <br>
 
